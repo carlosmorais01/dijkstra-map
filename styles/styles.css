@@ -1,6 +1,126 @@
 body {
-    font-family: Roboto, sans-serif;
-    background-color: #ffffff;
-    margin: 0;
-    padding: 20px;
+    font-family: Montserrat, sans-serif;
+    background-color: #F9F8F5;
+    margin: 40px;
+}
+
+strong {
+    font-size: 90px;
+    font-weight: 600;
+}
+
+.pre-title {
+    margin-top: 100px;
+    font-size: larger;
+    color: #EB3A3B;
+    margin-bottom: 0;
+}
+
+.description {
+    font-size: 38px;
+    font-weight: 500;
+    color: #565656;
+    margin-top: 0;
+}
+
+.div-descricao {
+    width: 600px;
+}
+
+.app-title {
+    position: relative;
+    display: inline-block;
+    font-size: 3rem;
+    font-weight: bold;
+}
+
+.app-title .icon {
+    position: absolute;
+    top: -0.4em;
+    right: -0.8em;
+}
+
+#fileInput {
+    display: none;
+}
+
+.botoes {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    width: 700px;
+    margin-top: 120px;
+}
+
+.botao-importar,
+.botao-gerar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 55px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    color: white;
+    font-size: 16px;
+    font-weight: lighter;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.botao-importar {
+    background-color: #EB3A3B;
+    color: white;
+    border: none;
+}
+
+.botao-importar:hover {
+    background-color: #c52f2f;
+}
+
+.botoes .icon {
+    width: 32px;
+    height: 32px;
+}
+
+.botao-gerar {
+    background-color: white;
+    color: black;
+    border: 4px solid #EB3A3B;
+}
+
+.botao-gerar:hover {
+    background-color: #d5d5d5;
+}
+
+.descricao-e-exemplo {
+    display: flex;
+    justify-content: center;
+    gap: 15%;
+}
+
+.example img {
+    width: 600px;
+    height: auto;
+    border: 5px solid #EB3A3B;
+    border-radius: 20px;
+    box-shadow: 25px 40px 20px rgba(0, 0, 0, 0.2);
+}
+
+.botoes-e-texto {
+    display: flex;
+    justify-content: center;
+    gap: 15%;
+    align-items: flex-start;
+}
+
+.texto {
+    width: 500px;
+    font-weight: lighter;
+    color: #4e4e4e;
+}
+
+destaque {
+    color: #EB3A3B;
 }
