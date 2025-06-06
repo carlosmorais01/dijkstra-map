@@ -3,12 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello, World!</title>
+    <title>DijkstraMap</title>
     <link rel="stylesheet" href="styles/styles.css">
 </head>
 <body>
-    <h1>Hello, World!</h1>
-    <p>This is a simple HTML page.</p>
+    <div class="descricao-e-exemplo">
+        <div class="div-descricao">
+            <p class="pre-title">
+                Com base no algoritmo do Cientista da Computação
+                <br><b>Edsger W. Dijkstra</b>
+            </p>
+
+            <h1 class="app-title">
+                <strong>DijkstraMap</strong><img class="icon" src="public/icon/app-icon.svg" alt="Icon">
+            </h1>
+
+            <p class="description">
+                Encontre o menor caminho entre dois pontos, importando um mapa ou criando um aleatório.
+            </p>
+        </div>
+
+        <div class="example">
+            <img class="gif" src="public/gif/example.gif" alt="Representação da percursão num grafo usando o Algoritmo de Dijkstra">
+        </div>
+    </div>
+
+    <div class="botoes-e-texto">
+        <div class="botoes">
+            <input type="file" id="fileInput" accept=".osm" />
+            <label for="fileInput" class="botao-importar">
+                <img src="public/icon/download-icon.svg" alt="" class="icon" />
+                Importar mapa
+            </label>
+
+            <a href="#" id="gerarGrafo" class="botao-gerar">
+                <img src="public/icon/graph-icon.svg" alt="" class="icon" />
+                Gerar Grafo
+            </a>
+        </div>
+
+        <p class="texto">
+            <destaque>Edsger W. Dijkstra</destaque> foi um renomado cientista da computação holandês, amplamente reconhecido por suas contribuições fundamentais à ciência da computação teórica e à
+            <destaque>engenharia de software</destaque>. Entre suas muitas realizações, destaca-se o algoritmo de Dijkstra, proposto em 1956, que resolve de forma eficiente o
+            <destaque>problema do menor caminho em grafos com pesos não negativos</destaque>. Este algoritmo é amplamente utilizado em redes, sistemas de navegação e diversas aplicações que envolvem rotas e otimização. A ferramenta nesta página utiliza exatamente esse algoritmo para <destaque>calcular o caminho mais curto entre os nós de um grafo importado</destaque>, seguindo os princípios estabelecidos por Dijkstra há mais de meio século.
+        </p>
+    </div>
+
 
 </body>
 </html>
