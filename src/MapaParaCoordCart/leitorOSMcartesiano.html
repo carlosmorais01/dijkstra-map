@@ -64,18 +64,23 @@
 
       xmlDoc.querySelectorAll("way").forEach((wayEl) => {
         const ndList = wayEl.querySelectorAll("nd");
+        const isOneway = wayEl.querySelector("tag[k='oneway'][v='yes']") !== null;
+
         for (let i = 0; i < ndList.length - 1; i++) {
           const fromId = nodeMap.get(ndList[i].getAttribute("ref"));
           const toId = nodeMap.get(ndList[i + 1].getAttribute("ref"));
+
           if (fromId !== undefined && toId !== undefined) {
-            edges.push({ id: edgeId++, from: fromId, to: toId });
+            edges.push({ id: edgeId++, from: fromId, to: toId, bidirectional: !isOneway });
+            if (!isOneway) {
+              edges.push({ id: edgeId++, from: toId, to: fromId, bidirectional: true });
+            }
           }
         }
       });
 
-      return { nodes, edges }; // NÃO aplica escala
+      return { nodes, edges };
     }
-
 
     function converterParaUTM(latDeg, lonDeg) {
       const PI = Math.PI;
@@ -125,8 +130,6 @@
 
       return { x: easting, y: northing, zone };
     }
-
-    
 
     function exportarJSON(objeto, nomeBase) {
       const blob = new Blob([JSON.stringify(objeto, null, 2)], { type: "application/json" });
