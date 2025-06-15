@@ -4,6 +4,25 @@ body {
     margin: 40px;
 }
 
+table {
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+table, th, td {
+    border-collapse: collapse;
+    border: 3px solid #EB3A3B;
+    background-color: white;
+}
+
+td, th {
+    text-align: center;      /* Alinha o conteúdo horizontalmente */
+    vertical-align: middle;  /* Alinha o conteúdo verticalmente */
+    padding: 5px;           /* Adiciona espaçamento interno */
+    width: 100px;
+}
+
 strong {
     font-size: 90px;
     font-weight: 600;
@@ -49,11 +68,12 @@ strong {
     justify-content: center;
     gap: 60px;
     width: 700px;
-    margin-top: 120px;
+    margin: 0;
 }
 
 .botao-importar,
-.botao-gerar {
+.botao-gerar,
+.botao {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -69,10 +89,27 @@ strong {
     transition: all 0.3s ease;
 }
 
-.botao-importar {
+.botao-importar, .botao {
     background-color: #EB3A3B;
     color: white;
     border: none;
+}
+
+.menu p, span {
+    margin-left: 65px;
+}
+
+.botao {
+    padding: 12px 25px;
+}
+
+.botoes-opcoes {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    justify-items: center;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
 }
 
 .botao-importar:hover {
@@ -123,4 +160,68 @@ strong {
 
 destaque {
     color: #EB3A3B;
+}
+
+.menu {
+    position: fixed;
+    left: 0;
+    top: 0;
+    margin-left: 0;
+    z-index: 2;
+    width: 25%;
+    height: 100%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* empurra conteúdo pra cima e os botões para baixo */
+    background-color: #F9F8F5;
+}
+
+.conteudo-menu {
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.principal-icon {
+    margin-left: 40px;
+    margin-top: 40px;
+}
+
+.info-menu {
+    font-size: 20px;
+}
+
+.grafo {
+    top: 0;
+    margin-top: 0;
+    z-index: 1;
+    position: absolute;
+    display: block;
+    left: 25%;
+    width: 75%;
+    height: 100%;
+    background-color: white;
+}
+
+.link {
+    stroke: #868baf;
+}
+
+.link.path {
+    stroke: limegreen;
+}
+.node.path {
+    fill: limegreen;
+}
+
+.ajustes {
+    margin: 20px 50px;
+    font-size: 14px;
+}
+.ajustes label {
+    display: block;
+    margin-top: 10px;
+}
+.ajustes input[type="range"] {
+    width: 100%;
 }

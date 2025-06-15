@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>DijkstraMap</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script type="module" src="src/graph/graphBuilder.js"></script>
+  <link rel="stylesheet" href="styles/styles.css">
+</head>
+<body>
+<div class="menu">
+  <div class="conteudo-menu">
+    <img class="principal-icon" src="public/icon/logo.svg" alt="Icon">
+    <p class="info-menu">Estatísticas do Algoritmo:</p>
+    <div class="stats">
+      <span id="velocidade">Velocidade = 0s</span><br>
+      <span id="status">Status = Aguardando</span><br>
+      <span id="explorados">Nós explorados = 0</span><br>
+      <span id="custo">Custo = 0</span><br>
+    </div>
+    <div class="ajustes"> <p class="info-menu">Ajustes de Visualização:</p>
+      <label for="slider-node-size">Tamanho dos Vértices</label>
+      <input type="range" id="slider-node-size" min="0.001" max="2" step="0.000000001" value="3">
+
+      <label for="slider-link-width">Espessura das Arestas</label>
+      <input type="range" id="slider-link-width" min="0.001" max="2" step="0.0001" value="1.5">
+
+      <label for="slider-arrow-size">Tamanho das Pontas</label>
+      <input type="range" id="slider-arrow-size" min="2" max="15" value="6" step="0.001">
+
+      <label for="slider-arrow-gap">Distanciamento da Ponta</label>
+      <input type="range" id="slider-arrow-gap" min="0" max="3" value="0" step="0.001">
+    </div>
+    <p class="info-menu">Caminho:</p>
+    <table id="tabela-caminho">
+      <thead>
+      <tr>
+        <th>Vértice</th>
+        <th>Distância</th>
+        <th>Próximo</th>
+      </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="botoes-opcoes">
+    <button class="botao" onclick="executarDijkstra()">Calcular Caminho</button>
+    <button class="botao" onclick="resetarSelecao()">Limpar Seleção</button>
+  </div>
+</div>
+<svg class="grafo"></svg>
+
+</body>
+</html>
