@@ -109,4 +109,13 @@ export class Grafo {
       visitados: visitados.size
     };
   }
+
+  distanciaEntre(origem, destino) {
+    const vizinhos = this.adjacencias.get(origem);
+    if (!vizinhos) return null;
+
+    const aresta = vizinhos.find(v => v.id === destino);
+    return aresta ? aresta.peso : null;
+  }
+
 }
