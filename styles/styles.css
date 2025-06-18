@@ -203,10 +203,6 @@ destaque {
     background-color: white;
 }
 
-.link {
-    stroke: #868baf;
-}
-
 .link.path {
     stroke: limegreen;
 }
@@ -224,4 +220,31 @@ destaque {
 }
 .ajustes input[type="range"] {
     width: 100%;
+}
+
+.toolbar {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.95);
+    padding: 6px;
+    border-radius: 8px;
+    display: flex;
+    gap: 6px;
+    z-index: 10;
+}
+.tool-button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+}
+.tool-button img {
+    width: 24px;
+    height: 24px;
+}
+.tool-button.active {
+    background-color: #d0d0ff;
 }
