@@ -19,3 +19,9 @@ fileInput.addEventListener("change", (event) => {
     };
     reader.readAsText(file);
 });
+
+document.getElementById("gerarGrafo").addEventListener("click", function (e) {
+    e.preventDefault();
+    localStorage.removeItem("grafo-importado"); // Limpa grafo salvo
+    window.location.href = "graphVisualization.html"; // substitua pelo nome da página do grafo se for diferente
+});
