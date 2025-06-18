@@ -208,8 +208,6 @@ function calcularTamanhoStroke(tamanhoVertice) {
 function atualizarPosicaoArestas() {
     atualizarDistanciaSetas();
     zoomGroup.selectAll(".link")
-    zoomGroup.selectAll(".link")
-    zoomGroup.selectAll(".link")
         .attr("x1", l => xScale(grafo.vertices.get(l.source).x))
         .attr("y1", l => yScale(grafo.vertices.get(l.source).y))
         .attr("x2", l => calcularPontoFinalX(l))
