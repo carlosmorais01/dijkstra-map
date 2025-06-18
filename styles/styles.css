@@ -175,6 +175,7 @@ destaque {
     flex-direction: column;
     justify-content: space-between; /* empurra conteúdo pra cima e os botões para baixo */
     background-color: #F9F8F5;
+    border-radius: 10px;
 }
 
 .conteudo-menu {
@@ -223,11 +224,11 @@ destaque {
 }
 
 .toolbar {
-    position: absolute;
+    position: fixed;
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(255,255,255,0.95);
+    background: #F9F8F5;
     padding: 6px;
     border-radius: 8px;
     display: flex;
@@ -246,5 +247,66 @@ destaque {
     height: 24px;
 }
 .tool-button.active {
-    background-color: #d0d0ff;
+    background-color: #EB3A3B;
+}
+
+.toolbar img {
+    width: 50px;
+    height: auto;
+}
+
+.tool-button-group {
+    position: relative; /* PARA POSICIONAR O DROPDOWN RELATIVO A ESTE GRUPO */
+}
+
+#tool-edge-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%; /* OCUPA A LARGURA TOTAL DO GRUPO */
+}
+
+.dropdown-arrow {
+    margin-left: 5px; /* ESPAÇAMENTO PARA A SETINHA */
+    font-size: 0.8em;
+}
+
+.edge-dropdown-content {
+    display: none; /* INICIALMENTE OCULTO */
+    position: absolute;
+    /* POSICIONA ACIMA DO BOTÃO PRINCIPAL. AJUSTE 'BOTTOM' CONFORME NECESSÁRIO */
+    bottom: calc(100% + 5px); /* 100% DA ALTURA DO PAI + 5PX DE ESPAÇO */
+    left: 0;
+    background-color: #f9f9f9;
+    min-width: 60px; /* LARGURA MÍNIMA DO DROPDOWN */
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1; /* GARANTE QUE FIQUE ACIMA DE OUTROS ELEMENTOS */
+    border-radius: 5px;
+    padding: 5px;
+    flex-direction: column; /* EMPILHA AS OPÇÕES */
+    gap: 5px; /* ESPAÇAMENTO ENTRE AS OPÇÕES */
+}
+
+.edge-dropdown-content.show {
+    display: flex; /* MOSTRA O DROPDOWN QUANDO A CLASSE 'SHOW' É ADICIONADA */
+}
+
+.edge-dropdown-content .tool-button {
+    /* ESTILOS PARA OS BOTÕES DENTRO DO DROPDOWN, SE DIFERENTES */
+    width: 100%; /* OCUPA A LARGURA DO DROPDOWN */
+    justify-content: center;
+}
+
+.tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.75); /* FUNDO ESCURO SEMITRANSPARENTE */
+    color: #fff; /* TEXTO BRANCO */
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    pointer-events: none; /* MUITO IMPORTANTE: IMPEDE QUE O TOOLTIP INTERFIRA COM EVENTOS DO MOUSE */
+    display: none; /* INICIALMENTE OCULTO */
+    white-space: nowrap; /* IMPEDE QUE O TEXTO QUEBRE LINHAS */
+    z-index: 1000; /* GARANTE QUE FIQUE ACIMA DE QUASE TUDO */
+    transform: translate(10px, 10px); /* PEQUENO OFFSET DO CURSOR */
 }

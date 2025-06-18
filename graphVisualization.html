@@ -51,25 +51,32 @@
 </div>
 <svg class="grafo"></svg>
 
+<div id="node-tooltip" class="tooltip"></div>
+
 <div class="toolbar">
-  <button id="tool-select" class="tool-button active" title="Selecionar">
-    <img src="public/icon/Icon_Select.svg" alt="Selecionar">
+  <button id="tool-select" class="tool-button active" data-mode="selecionar" title="Selecionar">
+    <img src="public/icon/Icon_Select.svg" alt="Selecionar" class="icon-tool">
   </button>
-  <button id="tool-node" class="tool-button" title="Adicionar vértice">
+  <button id="tool-node" class="tool-button" data-mode="add-node" title="Adicionar vértice">
     <img src="public/icon/Node_icon.svg" alt="Vértice">
   </button>
+
   <div class="tool-button-group">
-    <button id="tool-edge" class="tool-button" title="Adicionar aresta">
-      <img src="public/icon/edge.svg" alt="Aresta">
-    </button>
-    <div class="tool-dropdown">
-      <button id="tool-directed" class="tool-button" title="Aresta Direcionada">
-        <img src="public/icon/arrow.svg" alt="Dir.">
+    <button id="tool-edge-main" class="tool-button" data-mode="add-edge-undirected" title="Adicionar aresta">
+      <img id="edge-main-icon" src="public/icon/aresta.svg" alt="Aresta Não Direcionada">
+      <span class="dropdown-arrow">▼</span> </button>
+    <div class="edge-dropdown-content">
+      <button class="tool-button edge-option" data-edge-type="undirected" title="Aresta Não Direcionada">
+        <img src="public/icon/aresta.svg" alt="Não Direcionada">
+      </button>
+      <button class="tool-button edge-option" data-edge-type="directed" title="Aresta Direcionada">
+        <img src="public/icon/aresta-direcionada.svg" alt="Direcionada">
       </button>
     </div>
   </div>
-  <button id="tool-flag" class="tool-button" title="Selecionar origem/destino">
-    <img src="public/icon/flag.svg" alt="Origem/Destino">
+
+  <button id="tool-flag" class="tool-button" data-mode="origem-destino" title="Selecionar origem/destino">
+    <img src="public/icon/flag_icon.svg" alt="Origem/Destino">
   </button>
 </div>
 
