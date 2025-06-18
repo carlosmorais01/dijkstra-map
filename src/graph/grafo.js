@@ -1,81 +1,86 @@
-// grafo.js - Módulo 2
-
 export class Grafo {
   constructor() {
-    this.vertices = new Map(); // id => { x, y }
-    this.adjacencias = new Map(); // id => [ { id, peso } ]
+    this.vertices = new Map(); // Armazena { id: { x, y } }
+    this.adjacencia = new Map(); // Armazena id_origem -> Map<id_destino, {peso, bidirectional}>
   }
 
   // Carrega grafo a partir de um JSON (com nodes e edges)
-  carregarDoJSON(json) {
-    json.nodes.forEach(n => {
-      this.adicionarVertice(n.id, n.x, n.y);
+  carregarDoJSON(data) {
+    this.vertices = new Map();
+    this.adjacencia = new Map();
+
+    data.nodes.forEach(node => {
+      this.adicionarVertice(node.id, node.x, node.y);
     });
-    if (json.edges) {
-      json.edges.forEach(e => {
-        const bidir = e.bidirectional !== false;
-        this.adicionarAresta(e.from, e.to, bidir);
-      });
-    }
+
+    data.edges.forEach(edge => {
+      this.adicionarAresta(edge.from, edge.to, edge.bidirectional);
+    });
   }
 
   adicionarVertice(id, x, y) {
     if (!this.vertices.has(id)) {
-      this.vertices.set(id, { x, y });
-      this.adjacencias.set(id, []);
+      this.vertices.set(id, { id: id, x: x, y: y });
+      this.adjacencia.set(id, new Map());
+    } else {
+      // OPCIONAL: Atualizar posição se o vértice já existe
+      this.vertices.get(id).x = x;
+      this.vertices.get(id).y = y;
     }
   }
 
   removerVertice(id) {
-    this.vertices.delete(id);
-    this.adjacencias.delete(id);
-    for (const vizinhos of this.adjacencias.values()) {
-      const i = vizinhos.findIndex(v => v.id === id);
-      if (i !== -1) vizinhos.splice(i, 1);
+    if (this.vertices.has(id)) {
+      this.vertices.delete(id);
+      this.adjacencia.delete(id); // Remove o próprio vértice da lista de adjacência
+
+      // Remove todas as arestas que apontam para este vértice
+      this.adjacencia.forEach(adjList => {
+        adjList.delete(id);
+      });
     }
   }
 
-  adicionarAresta(origem, destino, bidirecional = true) {
-    const v1 = this.vertices.get(origem);
-    const v2 = this.vertices.get(destino);
-    if (!v1 || !v2) return;
-    const peso = this.distancia(v1, v2);
-    this.adjacencias.get(origem).push({ id: destino, peso });
-    if (bidirecional) {
-      this.adjacencias.get(destino).push({ id: origem, peso });
+  adicionarAresta(fromId, toId, bidirectional = false) {
+    if (!this.vertices.has(fromId) || !this.vertices.has(toId)) {
+      console.error("Um ou ambos os vértices não existem!");
+      return;
+    }
+    // NÃO ARMAZENAMOS O PESO AQUI, ELE SERÁ CALCULADO DINAMICAMENTE
+    this.adjacencia.get(fromId).set(toId, { bidirectional: bidirectional });
+    if (bidirectional) {
+      this.adjacencia.get(toId).set(fromId, { bidirectional: bidirectional });
     }
   }
-
-  removerAresta(origem, destino) {
-    this.adjacencias.set(
-      origem,
-      this.adjacencias.get(origem).filter(v => v.id !== destino)
-    );
-    this.adjacencias.set(
-      destino,
-      this.adjacencias.get(destino).filter(v => v.id !== origem)
-    );
-  }
-
-  distancia(v1, v2) {
-    return Math.sqrt((v1.x - v2.x) ** 2 + (v1.y - v2.y) ** 2);
+  removerAresta(fromId, toId) {
+    if (this.adjacencia.has(fromId)) {
+      const edgeData = this.adjacencia.get(fromId).get(toId);
+      this.adjacencia.get(fromId).delete(toId);
+      if (edgeData && edgeData.bidirectional && this.adjacencia.has(toId)) {
+        this.adjacencia.get(toId).delete(fromId);
+      }
+    }
   }
 
   dijkstra(origem, destino) {
     const dist = new Map();
     const prev = new Map();
     const visitados = new Set();
+    let nosExploradosContador = 0; // NOVO: Contador para nós explorados
 
+    // Inicializa distâncias e predecessores
     for (const id of this.vertices.keys()) {
       dist.set(id, Infinity);
       prev.set(id, null);
     }
     dist.set(origem, 0);
 
+    // Loop principal do Dijkstra
     while (visitados.size < this.vertices.size) {
       let u = null;
       let menorDist = Infinity;
 
+      // Encontra o vértice não visitado com a menor distância
       for (const [id, d] of dist.entries()) {
         if (!visitados.has(id) && d < menorDist) {
           menorDist = d;
@@ -83,14 +88,28 @@ export class Grafo {
         }
       }
 
-      if (u === null || u === destino) break;
-      visitados.add(u);
+      // Se não há mais vértices alcançáveis ou o destino foi encontrado
+      if (u === null) break; // Não há mais nós alcançáveis
+      if (u === destino) break; // Destino encontrado
 
-      for (const vizinho of this.adjacencias.get(u)) {
-        const alt = dist.get(u) + vizinho.peso;
-        if (alt < dist.get(vizinho.id)) {
-          dist.set(vizinho.id, alt);
-          prev.set(vizinho.id, u);
+      visitados.add(u);
+      nosExploradosContador++; // Incrementa o contador ao visitar um nó
+
+      // Itera sobre os vizinhos do vértice 'u'
+      // ALTERADO: Agora iteramos sobre a lista de adjacência de 'u'
+      for (const [vizinhoId, edgeData] of this.adjacencia.get(u).entries()) { // ALTERADO AQUI
+        // NOVO: OBTÉM A DISTÂNCIA (PESO) DINAMICAMENTE
+        const distanciaAresta = this.distanciaEntre(u, vizinhoId);
+
+        // Certifica-se de que a aresta realmente existe e tem uma distância finita
+        if (distanciaAresta === null || !isFinite(distanciaAresta)) {
+          continue; // Pula se não houver aresta válida ou se o vizinho não existe/estiver desconectado
+        }
+
+        const alt = dist.get(u) + distanciaAresta; // USANDO A DISTÂNCIA CALCULADA
+        if (alt < dist.get(vizinhoId)) { // USANDO vizinhoId, não vizinho.id
+          dist.set(vizinhoId, alt); // USANDO vizinhoId
+          prev.set(vizinhoId, u); // USANDO vizinhoId
         }
       }
     }
@@ -98,6 +117,15 @@ export class Grafo {
     // Reconstruir caminho
     const caminho = [];
     let atual = destino;
+    // NOVO: Adiciona verificação para garantir que o destino é alcançável
+    if (dist.get(destino) === Infinity) {
+      return {
+        caminho: [],
+        custo: Infinity,
+        visitados: nosExploradosContador // Retorna o contador correto mesmo sem caminho
+      };
+    }
+
     while (atual !== null) {
       caminho.unshift(atual);
       atual = prev.get(atual);
@@ -106,16 +134,37 @@ export class Grafo {
     return {
       caminho,
       custo: dist.get(destino),
-      visitados: visitados.size
+      visitados: nosExploradosContador // Retorna o contador de nós explorados
     };
   }
 
-  distanciaEntre(origem, destino) {
-    const vizinhos = this.adjacencias.get(origem);
-    if (!vizinhos) return null;
+  /**
+   * NOVO/ALTERADO: CALCULA A DISTÂNCIA EUCLIDIANA ENTRE DOIS VÉRTICES.
+   * @param {string} fromId - ID DO VÉRTICE DE ORIGEM.
+   * @param {string} toId - ID DO VÉRTICE DE DESTINO.
+   * @returns {number|null} A DISTÂNCIA OU NULL SE OS VÉRTICES NÃO EXISTIREM OU NÃO HOUVER CONEXÃO.
+   */
+  distanciaEntre(fromId, toId) {
+    const fromVertex = this.vertices.get(fromId);
+    const toVertex = this.vertices.get(toId);
 
-    const aresta = vizinhos.find(v => v.id === destino);
-    return aresta ? aresta.peso : null;
+    if (!fromVertex || !toVertex) {
+      return null; // VÉRTICES NÃO ENCONTRADOS
+    }
+
+    // VERIFICA SE EXISTE UMA ARESTA DIRECIONAL (FROM -> TO)
+    const edgeExists = this.adjacencia.has(fromId) && this.adjacencia.get(fromId).has(toId);
+
+    // SE NÃO HOUVER ARESTA ENTRE ELES, RETORNA NULL OU INFINITY, DEPENDENDO DA SUA LÓGICA
+    // PARA ALGORITMOS DE BUSCA, INFINITY É GERALMENTE MELHOR.
+    if (!edgeExists) {
+      return Infinity; // OU UM VALOR QUE INDIQUE AUSÊNCIA DE ARESTA
+    }
+
+    // CALCULA A DISTÂNCIA EUCLIDIANA
+    const dx = fromVertex.x - toVertex.x;
+    const dy = fromVertex.y - toVertex.y;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
 }
