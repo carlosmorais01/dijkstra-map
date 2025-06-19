@@ -1,32 +1,64 @@
-import {Grafo} from './grafo.js';
-import { parseOSM } from './mapConverter.js';
+/**
+ * @file graphBuilder.js
+ * @brief Este arquivo é responsável por construir e gerenciar a interface gráfica de um grafo usando D3.js.
+ * Ele lida com a interatividade do usuário, como adicionar, remover e mover nós e arestas,
+ * além de funcionalidades de importação/exportação e visualização de algoritmos de caminho mínimo.
+ * @author Carlos
+ * @date 19/06/2025
+ */
 
+import { Grafo } from './grafo.js'; // Importa a classe Grafo de um módulo local
+import { parseOSM } from './mapConverter.js'; // Importa a função parseOSM para lidar com arquivos OpenStreetMap
+
+/** @global {string|null} origemClicada - O ID do nó de origem selecionado para o cálculo de caminho. */
 let origemClicada = null;
+/** @global {string|null} destinoClicada - O ID do nó de destino selecionado para o cálculo de caminho. */
 let destinoClicada = null;
+/** @global {Array<d3.Selection>} circulosSelecionados - Array de seleções D3 para os círculos de nós que foram clicados (origem/destino). */
 let circulosSelecionados = [];
 
+/** @global {d3.Selection} svg - A seleção D3 para o elemento SVG principal onde o grafo é desenhado. */
 const svg = d3.select("svg");
+/** @global {HTMLElement} tabela - A referência ao corpo da tabela HTML onde os detalhes do caminho são exibidos. */
 const tabela = document.querySelector("#tabela-caminho tbody");
+/** @global {Grafo} grafo - Uma instância da classe Grafo que representa a estrutura de dados do grafo. */
 let grafo = new Grafo();
-let nodes = [], links = [];
+/** @global {Array<Object>} nodes - Um array de objetos representando os nós do grafo com suas coordenadas (id, x, y). */
+let nodes = [];
+/** @global {Array<Object>} links - Um array de objetos representando as arestas do grafo (source, target, bidirectional). */
+let links = [];
+/** @global {number} contadorId - Um contador para gerar IDs sequenciais para novos nós. */
 let contadorId = 1;
 
+/** @global {d3.Selection} zoomGroup - Um grupo SVG para aplicar transformações de zoom e pan ao grafo. */
 const zoomGroup = svg.append("g");
+/** @global {d3.Selection} nodeTooltip - A seleção D3 para o elemento HTML do tooltip do nó. */
 const nodeTooltip = d3.select("#node-tooltip");
 
+/** @global {boolean} isDrawingEdge - Sinalizador que indica se o usuário está atualmente desenhando uma aresta. */
 let isDrawingEdge = false;
+/** @global {string|null} startNode - O ID do nó onde o desenho da aresta começou. */
 let startNode = null;
+/** @global {d3.Selection|null} currentLine - A seleção D3 para a linha temporária que representa a aresta sendo desenhada. */
 let currentLine = null;
+/** @global {string} edgeType - O tipo de aresta a ser adicionada ('undirected' ou 'directed'). */
 let edgeType = 'undirected';
 
+/** @global {number} tamanhoVertice - O raio dos nós em pixels. */
 let tamanhoVertice = 3;
+/** @global {number} larguraAresta - A largura das arestas em pixels. */
 let larguraAresta = 1.5;
+/** @global {number} tamanhoSeta - O tamanho das setas das arestas direcionadas. */
 let tamanhoSeta = 6;
+/** @global {number} distanciaSeta - A distância da seta do nó de destino em arestas direcionadas. */
 let distanciaSeta = 1;
 
+/** @global {boolean} enumerarVertices - Sinalizador para controlar a exibição dos IDs dos nós. */
 let enumerarVertices = false;
+/** @global {boolean} mostrarPesosArestas - Sinalizador para controlar a exibição dos pesos das arestas. */
 let mostrarPesosArestas = false;
 
+// Listeners para os sliders de configuração visual
 document.getElementById("slider-node-size").addEventListener("input", e => {
     tamanhoVertice = +e.target.value;
     atualizarVertices();
@@ -49,6 +81,7 @@ document.getElementById("slider-arrow-gap").addEventListener("input", e => {
     atualizarDistanciaSetas();
 });
 
+// Definição das setas (markers) para arestas direcionadas
 svg.append("defs").append("marker")
     .attr("id", "arrowhead-green")
     .attr("viewBox", "0 -5 10 10")
@@ -73,9 +106,15 @@ svg.append("defs").append("marker")
     .attr("d", "M0,-5L10,0L0,5")
     .attr("fill", "#868baf");
 
+/** @global {string} modoAtual - O modo de interação atual ('selecionar', 'add-node', 'add-edge-undirected', 'add-edge-directed', 'origem-destino', 'apagar'). */
 let modoAtual = "selecionar";
+/** @global {Object|null} itemSelecionado - O nó ou aresta atualmente selecionado no modo 'selecionar'. */
 let itemSelecionado = null;
 
+/**
+ * @brief Configura os event listeners para os botões da barra de ferramentas.
+ * Permite alternar entre diferentes modos de interação (selecionar, adicionar nó, adicionar aresta, apagar, origem/destino).
+ */
 function configurarToolbar() {
     document.querySelectorAll(".tool-button:not(.edge-option):not(#tool-edge-main)").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -131,7 +170,7 @@ function configurarToolbar() {
         if (!edgeMainButton.contains(event.target) && !edgeDropdown.contains(event.target)) {
             edgeDropdown.classList.remove("show");
         }
-        const mainMenuToggle = document.getElementById("menu-toggle-arrow"); // Alterado para o ID da nova seta
+        const mainMenuToggle = document.getElementById("menu-toggle-arrow");
         const mainMenuContent = document.getElementById("app-main-menu");
         if (mainMenuToggle && mainMenuContent && !mainMenuToggle.contains(event.target) && !mainMenuContent.contains(event.target)) {
             mainMenuContent.classList.remove("show");
@@ -152,6 +191,10 @@ function configurarToolbar() {
 
 }
 
+/**
+ * @brief Configura os event listeners para os itens do menu principal.
+ * Inclui funcionalidades como novo grafo, importação/exportação, copiar imagem e configurações de visualização.
+ */
 function configurarMenuPrincipal() {
     const mainMenuToggle = document.getElementById("menu-toggle-arrow");
     const mainMenuContent = document.getElementById("app-main-menu");
@@ -172,7 +215,6 @@ function configurarMenuPrincipal() {
             item.querySelector(".submenu-content").style.display = "none";
         });
     });
-
 
     document.getElementById("new-graph-btn").addEventListener("click", () => {
         window.limparGrafo();
@@ -209,16 +251,23 @@ function configurarMenuPrincipal() {
         }
     });
 
+    /**
+     * @brief Importa dados de grafo de um objeto JSON (ou OSM parseado) e os desenha na interface.
+     * @param {Object} data - O objeto contendo os nós e arestas do grafo.
+     * @param {Array<Object>} data.nodes - Array de objetos de nós com id, x, y.
+     * @param {Array<Object>} data.edges - Array de objetos de arestas com from, to, bidirectional.
+     */
     function importarGrafo(data) {
         grafo = new Grafo();
 
+        // Normaliza as coordenadas para que o ponto mais à esquerda/inferior seja (0,0) ou similar
         const minX = Math.min(...data.nodes.map(n => n.x));
         const minY = Math.min(...data.nodes.map(n => n.y));
 
         nodes = data.nodes.map(n => ({
             id: n.id,
             x: n.x - minX,
-            y: (n.y - minY) * -1
+            y: (n.y - minY) * -1 // Inverte o eixo Y para exibição no SVG (origem no canto superior esquerdo)
         }));
 
         grafo.carregarDoJSON({ nodes, edges: data.edges });
@@ -226,7 +275,7 @@ function configurarMenuPrincipal() {
         links = data.edges.map(e => ({
             source: e.from,
             target: e.to,
-            bidirectional: e.bidirectional !== false
+            bidirectional: e.bidirectional !== false // Assume true se não especificado
         }));
 
         desenharGrafoCompleto();
@@ -234,6 +283,7 @@ function configurarMenuPrincipal() {
         window.resetarSelecao();
 
         if (nodes.length > 0) {
+            // Atualiza o contador de ID para continuar a partir do maior ID existente
             const max = Math.max(...nodes.map(n => parseInt(String(n.id).replace(/\D+/g, ''))).filter(n => !isNaN(n)));
             contadorId = max + 1;
         }
@@ -252,6 +302,7 @@ function configurarMenuPrincipal() {
     const enumerateNodesSwitch = document.getElementById("enumerate-nodes-switch");
     const showEdgeWeightsSwitch = document.getElementById("show-edge-weights-switch");
 
+    // Carrega as preferências de exibição do localStorage
     enumerarVertices = localStorage.getItem("enumerarVertices") === "true";
     mostrarPesosArestas = localStorage.getItem("mostrarPesosArestas") === "true";
 
@@ -271,9 +322,13 @@ function configurarMenuPrincipal() {
     });
 }
 
+/**
+ * @brief Salva o grafo atual em um arquivo JSON local.
+ * Inclui os nós e arestas com suas respectivas propriedades.
+ */
 function salvarGrafoLocal() {
     const dataToSave = {
-        nodes: nodes.map(n => ({ id: n.id, x: n.x, y: n.y * -1 })),
+        nodes: nodes.map(n => ({ id: n.id, x: n.x, y: n.y * -1 })), // Inverte o Y de volta para o formato original
         edges: links.map(l => ({ from: l.source, to: l.target, bidirectional: l.bidirectional }))
     };
     const dataStr = JSON.stringify(dataToSave, null, 2);
@@ -289,6 +344,10 @@ function salvarGrafoLocal() {
     URL.revokeObjectURL(url);
 }
 
+/**
+ * @brief Atualiza a exibição dos IDs dos vértices no grafo.
+ * Adiciona, atualiza ou remove os rótulos de texto com base na variável `enumerarVertices`.
+ */
 function atualizarEnumeracaoVertices() {
     if (enumerarVertices) {
         const labels = zoomGroup.selectAll(".node-label")
@@ -301,9 +360,9 @@ function atualizarEnumeracaoVertices() {
                 .attr("dominant-baseline", "middle")
                 .attr("pointer-events", "none")
                 .attr("fill", "#f3efe7")
-                .attr("font-size", d => Math.max(0.001, tamanhoVertice) + "px")
+                .attr("font-size", d => Math.max(0.001, tamanhoVertice) + "px") // Garante tamanho mínimo
                 .attr("x", d => d.x)
-                .attr("y", d => d.y + 0.25)
+                .attr("y", d => d.y + 0.25) // Pequeno offset para centralização visual
                 .text(d => d.id),
             update => update
                 .attr("x", d => d.x)
@@ -313,12 +372,16 @@ function atualizarEnumeracaoVertices() {
             exit => exit.remove()
         );
 
-        zoomGroup.selectAll(".node-label").raise();
+        zoomGroup.selectAll(".node-label").raise(); // Garante que os rótulos fiquem acima dos nós
     } else {
         zoomGroup.selectAll(".node-label").remove();
     }
 }
 
+/**
+ * @brief Atualiza a exibição dos pesos das arestas no grafo.
+ * Adiciona, atualiza ou remove os rótulos de texto com base na variável `mostrarPesosArestas`.
+ */
 function atualizarPesosArestas() {
     if (mostrarPesosArestas) {
         const weightLabels = zoomGroup.selectAll(".link-weight-label")
@@ -336,7 +399,7 @@ function atualizarPesosArestas() {
                 let midX = (from.x + to.x) / 2;
                 let midY = (from.y + to.y) / 2;
 
-                const offset = 5;
+                const offset = 5; // Offset para evitar sobreposição com a aresta
                 const angle = Math.atan2(to.y - from.y, to.x - from.x);
                 midX += Math.sin(angle) * offset;
                 midY -= Math.cos(angle) * offset;
@@ -354,9 +417,9 @@ function atualizarPesosArestas() {
                 midY -= Math.cos(angle) * offset;
                 return midY;
             })
-            .attr("font-size", d => Math.max(2, larguraAresta * 5) + "px")
+            .attr("font-size", d => Math.max(2, larguraAresta * 5) + "px") // Tamanho da fonte proporcional à largura da aresta
             .attr("fill", "#393939")
-            .attr("pointer-events", "none")
+            .attr("pointer-events", "none") // Impede que o texto bloqueie eventos de mouse nas arestas
             .text(d => {
                 const distance = grafo.distanciaEntre(d.source, d.target);
                 return distance !== null && isFinite(distance) ? distance.toFixed(2) : '';
@@ -368,17 +431,22 @@ function atualizarPesosArestas() {
     }
 }
 
-
+/**
+ * @brief Reinicia a seleção visual de todos os nós e arestas para o estado padrão.
+ * Remove classes 'selecionado' e redefine cores e raios.
+ */
 function resetarSelecaoVisual() {
     zoomGroup.selectAll(".node").attr("fill", "#4960dd").classed("selecionado", false);
     zoomGroup.selectAll(".link").attr("stroke", "#868baf").classed("selecionado", false);
     itemSelecionado = null;
 }
 
+/** @global {d3.ZoomTransform} currentTransform - A transformação de zoom atual aplicada ao `zoomGroup`. */
 let currentTransform = d3.zoomIdentity;
 
+/** @global {d3.ZoomBehavior} zoom - O comportamento de zoom e pan do D3.js. */
 const zoom = d3.zoom()
-    .scaleExtent([0.02, 1000])
+    .scaleExtent([0.02, 1000]) // Define os limites de escala
     .on("zoom", (event) => {
         currentTransform = event.transform;
         zoomGroup.attr("transform", currentTransform);
@@ -386,12 +454,13 @@ const zoom = d3.zoom()
         atualizarPesosArestas();
     });
 
-svg.call(zoom);
+svg.call(zoom); // Aplica o comportamento de zoom ao SVG
 
+// Event listener para o clique no SVG (usado para adicionar nós)
 svg.on("click", (event) => {
     if (modoAtual === "add-node") {
         const [mouseX, mouseY] = d3.pointer(event);
-        const [xLogico, yLogico] = currentTransform.invert([mouseX, mouseY]);
+        const [xLogico, yLogico] = currentTransform.invert([mouseX, mouseY]); // Converte coordenadas da tela para coordenadas lógicas do grafo
 
         const id = gerarIdSequencial();
         grafo.adicionarVertice(id, xLogico, yLogico);
@@ -401,34 +470,38 @@ svg.on("click", (event) => {
     }
 });
 
+/**
+ * @brief Configura os eventos de mouse e arrasto para uma seleção de nós.
+ * @param {d3.Selection} selection - A seleção D3 dos elementos de círculo que representam os nós.
+ */
 function configurarEventosNo(selection) {
     selection
         .on("click", function (event, d) {
-            event.stopPropagation();
+            event.stopPropagation(); // Impede que o clique se propague para o SVG pai
 
             if (modoAtual === "origem-destino") {
                 if (origemClicada && destinoClicada) {
-                    return;
+                    return; // Já selecionou origem e destino
                 }
 
                 if (d.id === origemClicada || d.id === destinoClicada) {
-                    return;
+                    return; // Clicou em um nó já selecionado como origem ou destino
                 }
 
                 if (!origemClicada) {
                     origemClicada = d.id;
-                    d3.select(this).attr("fill", "orange").attr("r", tamanhoVertice * 1.2);
+                    d3.select(this).attr("fill", "orange").attr("r", tamanhoVertice * 1.2); // Destaca a origem
                     circulosSelecionados.push(d3.select(this));
                 } else if (!destinoClicada) {
                     destinoClicada = d.id;
-                    d3.select(this).attr("fill", "red").attr("r", tamanhoVertice * 1.2);
+                    d3.select(this).attr("fill", "red").attr("r", tamanhoVertice * 1.2); // Destaca o destino
                     circulosSelecionados.push(d3.select(this));
                 }
             } else if (modoAtual === "apagar") {
                 grafo.removerVertice(d.id);
                 nodes = nodes.filter(n => n.id !== d.id);
                 links = links.filter(l => l.source !== d.id && l.target !== d.id);
-                desenharGrafoCompleto();
+                desenharGrafoCompleto(); // Redesenha o grafo após a remoção
             }
         })
         .on("mouseover", function (event, d) {
@@ -449,10 +522,10 @@ function configurarEventosNo(selection) {
         })
         .call(
             d3.drag()
-                .filter(event => modoAtual === "selecionar" || modoAtual.startsWith("add-edge-"))
+                .filter(event => modoAtual === "selecionar" || modoAtual.startsWith("add-edge-")) // Permite arrastar no modo selecionar ou para desenhar arestas
                 .on("start", function (event, d) {
                     nodeTooltip.style("display", "none");
-                    d._dragStart = { x: event.x, y: event.y };
+                    d._dragStart = { x: event.x, y: event.y }; // Salva a posição inicial do arrasto
 
                     if (modoAtual.startsWith("add-edge-")) {
                         isDrawingEdge = true;
@@ -464,12 +537,12 @@ function configurarEventosNo(selection) {
                             .attr("y2", d.y)
                             .attr("stroke", "gray")
                             .attr("stroke-width", larguraAresta)
-                            .attr("stroke-dasharray", "5,5");
+                            .attr("stroke-dasharray", "5,5"); // Linha tracejada para indicar desenho
                     } else if (modoAtual === "selecionar") {
-                        d3.select(this).raise().attr("stroke", "black");
+                        d3.select(this).raise().attr("stroke", "black"); // Move o nó selecionado para frente e adiciona borda
                         zoomGroup.selectAll(".node-label")
                             .filter(lbl => lbl.id === d.id)
-                            .raise();
+                            .raise(); // Garante que o rótulo do nó também seja elevado
                     }
                 })
                 .on("drag", function (event, d) {
@@ -477,7 +550,7 @@ function configurarEventosNo(selection) {
                     if (modoAtual === "selecionar") {
                         d.x = event.x;
                         d.y = event.y;
-                        grafo.vertices.set(d.id, { x: d.x, y: d.y });
+                        grafo.vertices.set(d.id, { x: d.x, y: d.y }); // Atualiza a posição no objeto Grafo
 
                         const index = nodes.findIndex(n => n.id === d.id);
                         if (index !== -1) {
@@ -488,8 +561,8 @@ function configurarEventosNo(selection) {
                         d3.select(this)
                             .attr("cx", d.x)
                             .attr("cy", d.y);
-                        atualizarPosicaoArestas();
-                        atualizarEnumeracaoVertices();
+                        atualizarPosicaoArestas(); // Atualiza a posição das arestas conectadas
+                        atualizarEnumeracaoVertices(); // Atualiza a posição dos rótulos
                         zoomGroup.selectAll(".node-label").raise();
                     } else if (isDrawingEdge && currentLine) {
                         currentLine
@@ -502,10 +575,10 @@ function configurarEventosNo(selection) {
 
                     const dx = event.x - d._dragStart.x;
                     const dy = event.y - d._dragStart.y;
-                    const moved = Math.sqrt(dx * dx + dy * dy) > 2;
+                    const moved = Math.sqrt(dx * dx + dy * dy) > 2; // Verifica se houve movimento significativo
 
                     if (modoAtual === "selecionar") {
-                        d3.select(this).attr("stroke", null);
+                        d3.select(this).attr("stroke", null); // Remove a borda após arrastar
                     } else if (modoAtual.startsWith("add-edge-")) {
                         if (currentLine) {
                             currentLine.remove();
@@ -520,6 +593,7 @@ function configurarEventosNo(selection) {
 
                         if (startNode && endNode && startNode !== endNode.id) {
                             const bidirectional = (edgeType === 'undirected');
+                            // Verifica se a aresta já existe para evitar duplicatas
                             const existingLink = links.find(
                                 l => (l.source === startNode && l.target === endNode.id && l.bidirectional === bidirectional) ||
                                     (l.source === endNode.id && l.target === startNode && l.bidirectional === bidirectional && bidirectional)
@@ -537,6 +611,12 @@ function configurarEventosNo(selection) {
         );
 }
 
+/**
+ * @brief Desenha um novo nó no SVG.
+ * @param {string} id - O ID do novo nó.
+ * @param {number} x - A coordenada X do nó.
+ * @param {number} y - A coordenada Y do nó.
+ */
 function desenharNovoNo(id, x, y) {
     const strokeWidth = calcularTamanhoStroke(tamanhoVertice);
 
@@ -551,9 +631,15 @@ function desenharNovoNo(id, x, y) {
         .attr("stroke-width", strokeWidth);
 
     configurarEventosNo(newNode);
-    atualizarEnumeracaoVertices();
+    atualizarEnumeracaoVertices(); // Atualiza os rótulos de nós, caso estejam habilitados
 }
 
+/**
+ * @brief Desenha uma nova aresta no SVG.
+ * @param {string} sourceId - O ID do nó de origem da aresta.
+ * @param {string} targetId - O ID do nó de destino da aresta.
+ * @param {boolean} bidirectional - Verdadeiro se a aresta for bidirecional, falso caso contrário.
+ */
 function desenharNovaAresta(sourceId, targetId, bidirectional) {
     const newLink = { source: sourceId, target: targetId, bidirectional: bidirectional };
     const from = grafo.vertices.get(newLink.source);
@@ -561,6 +647,7 @@ function desenharNovaAresta(sourceId, targetId, bidirectional) {
 
     const x1 = from.x;
     const y1 = from.y;
+    // Calcula o ponto final da aresta considerando a seta, se for direcionada
     const x2 = bidirectional ? to.x : calcularPontoFinalX(newLink, true);
     const y2 = bidirectional ? to.y : calcularPontoFinalY(newLink, true);
 
@@ -577,18 +664,23 @@ function desenharNovaAresta(sourceId, targetId, bidirectional) {
 
     configurarEventosAresta(novaLinha);
 
+    // Garante que nós e rótulos estejam acima das arestas
     zoomGroup.selectAll(".node").raise();
     zoomGroup.selectAll(".selected-node.temp-selection").raise();
     zoomGroup.selectAll(".node-label").raise();
-    atualizarPesosArestas();
+    atualizarPesosArestas(); // Atualiza os pesos das arestas, caso estejam habilitados
 }
 
-function
-configurarEventosAresta(selection) {
+/**
+ * @brief Configura os eventos de mouse para uma seleção de arestas.
+ * @param {d3.Selection} selection - A seleção D3 dos elementos de linha que representam as arestas.
+ */
+function configurarEventosAresta(selection) {
     selection
         .on("click", function (event, d) {
             if (modoAtual === "apagar") {
                 grafo.removerAresta(d.source, d.target);
+                // Remove a aresta do array 'links', considerando arestas bidirecionais
                 links = links.filter(l =>
                     !(l.source === d.source && l.target === d.target) &&
                     !(l.bidirectional && l.source === d.target && l.target === d.source)
@@ -601,9 +693,9 @@ configurarEventosAresta(selection) {
             event.stopPropagation();
             resetarSelecaoVisual();
             d3.select(this)
-                .attr("stroke", "#EB3A3B")
+                .attr("stroke", "#EB3A3B") // Destaca a aresta selecionada
                 .classed("selecionado", true);
-            itemSelecionado = d;
+            itemSelecionado = d; // Armazena a aresta selecionada
         })
         .on("mouseover", function (event, d) {
             if (modoAtual !== "selecionar") return;
@@ -624,16 +716,29 @@ configurarEventosAresta(selection) {
         });
 }
 
+/**
+ * @brief Calcula a largura do traço (stroke) para um nó com base no seu tamanho.
+ * @param {number} tamanhoVertice - O raio do vértice.
+ * @returns {number} A largura do traço.
+ */
 function calcularTamanhoStroke(tamanhoVertice) {
     return tamanhoVertice * 0.2;
 }
 
+/**
+ * @brief Gera um ID sequencial único para novos nós.
+ * @returns {string} O próximo ID disponível.
+ */
 function gerarIdSequencial() {
     return `${contadorId++}`;
 }
 
+/**
+ * @brief Atualiza a posição de todas as arestas no grafo, incluindo seus rótulos de peso.
+ * Chamado quando os nós são movidos.
+ */
 function atualizarPosicaoArestas() {
-    atualizarDistanciaSetas();
+    atualizarDistanciaSetas(); // Garante que as setas estejam na posição correta
     zoomGroup.selectAll(".link")
         .attr("x1", l => grafo.vertices.get(l.source).x)
         .attr("y1", l => grafo.vertices.get(l.source).y)
@@ -668,26 +773,41 @@ function atualizarPosicaoArestas() {
     }
 }
 
-function calcularPontoFinalX(aresta, useLogicalCoords = false) {
-    const {dx, len} = calcularDiferencasEComprimento(aresta, useLogicalCoords);
+/**
+ * @brief Calcula a coordenada X do ponto final de uma aresta, ajustando para a posição da seta.
+ * @param {Object} aresta - O objeto da aresta (com source, target, bidirectional).
+ * @returns {number} A coordenada X final.
+ */
+function calcularPontoFinalX(aresta) {
+    const { dx, len } = calcularDiferencasEComprimento(aresta);
     const to = grafo.vertices.get(aresta.target);
     const xTo = to.x;
 
     return aresta.bidirectional
         ? xTo
-        : (len > 0 ? xTo - (dx / len) * distanciaSeta : xTo);
+        : (len > 0 ? xTo - (dx / len) * (distanciaSeta + tamanhoVertice / 2) : xTo); // Ajusta pela distância da seta e metade do tamanho do vértice
 }
 
-function calcularPontoFinalY(aresta, useLogicalCoords = false) {
-    const {dy, len} = calcularDiferencasEComprimento(aresta, useLogicalCoords);
+/**
+ * @brief Calcula a coordenada Y do ponto final de uma aresta, ajustando para a posição da seta.
+ * @param {Object} aresta - O objeto da aresta (com source, target, bidirectional).
+ * @returns {number} A coordenada Y final.
+ */
+function calcularPontoFinalY(aresta) {
+    const { dy, len } = calcularDiferencasEComprimento(aresta);
     const to = grafo.vertices.get(aresta.target);
     const yTo = to.y;
 
     return aresta.bidirectional
         ? yTo
-        : (len > 0 ? yTo - (dy / len) * distanciaSeta : yTo);
+        : (len > 0 ? yTo - (dy / len) * (distanciaSeta + tamanhoVertice / 2) : yTo); // Ajusta pela distância da seta e metade do tamanho do vértice
 }
 
+/**
+ * @brief Calcula as diferenças nas coordenadas (dx, dy) e o comprimento (len) de uma aresta.
+ * @param {Object} aresta - O objeto da aresta (com source, target).
+ * @returns {{dx: number, dy: number, len: number}} Um objeto contendo dx, dy e len.
+ */
 function calcularDiferencasEComprimento(aresta) {
     const from = grafo.vertices.get(aresta.source);
     const to = grafo.vertices.get(aresta.target);
@@ -700,9 +820,13 @@ function calcularDiferencasEComprimento(aresta) {
     const dx = xTo - xFrom;
     const dy = yTo - yFrom;
     const len = Math.sqrt(dx * dx + dy * dy);
-    return {dx, dy, len};
+    return { dx, dy, len };
 }
 
+/**
+ * @brief Cancela qualquer operação de desenho de aresta em andamento.
+ * Remove a linha temporária e redefine as variáveis de estado.
+ */
 function cancelarDesenhoAresta() {
     if (currentLine) {
         currentLine.remove();
@@ -712,15 +836,16 @@ function cancelarDesenhoAresta() {
     startNode = null;
 }
 
+// Event listener para a tecla 'Delete' para remover itens selecionados
 document.addEventListener("keydown", (e) => {
     if (modoAtual !== "selecionar" || !itemSelecionado) return;
     if (e.key === "Delete") {
-        if (itemSelecionado.id) {
+        if (itemSelecionado.id) { // Se for um nó
             const id = itemSelecionado.id;
             grafo.removerVertice(id);
             nodes = nodes.filter(n => n.id !== id);
             links = links.filter(l => l.source !== id && l.target !== id);
-        } else if (itemSelecionado.source && itemSelecionado.target) {
+        } else if (itemSelecionado.source && itemSelecionado.target) { // Se for uma aresta
             grafo.removerAresta(itemSelecionado.source, itemSelecionado.target);
             links = links.filter(l =>
                 !(l.source === itemSelecionado.source && l.target === itemSelecionado.target) &&
@@ -732,13 +857,20 @@ document.addEventListener("keydown", (e) => {
     }
 });
 
+/**
+ * @brief Encontra o vértice mais próximo a uma dada coordenada.
+ * @param {number} xCoordInZoomGroup - Coordenada X no grupo de zoom.
+ * @param {number} yCoordInZoomGroup - Coordenada Y no grupo de zoom.
+ * @returns {Object|null} O nó mais próximo ou null se nenhum for encontrado dentro da tolerância.
+ */
 function encontrarVerticeMaisProximo(xCoordInZoomGroup, yCoordInZoomGroup) {
-    const tolerance = 1;
+    const tolerance = 1; // Tolerância para cliques próximos ao nó
     return nodes.find(n => {
         return Math.hypot(n.x - xCoordInZoomGroup, n.y - yCoordInZoomGroup) <= (tamanhoVertice + tolerance);
     }) || null;
 }
 
+// Carrega o grafo salvo localmente ao iniciar
 const grafoSalvo = localStorage.getItem("grafo-importado");
 
 if (grafoSalvo) {
@@ -768,6 +900,7 @@ if (grafoSalvo) {
     if (nodes.length > 0) {
         centralizarGrafo();
     } else {
+        // Se não há grafo salvo e nenhum nó, inicializa a transformação para centralizar o SVG
         const svgHeight = svg.node().getBoundingClientRect().height;
         const initialTransform = d3.zoomIdentity.scale(1, -1).translate(0, -svgHeight);
         svg.call(zoom.transform, initialTransform);
@@ -775,6 +908,7 @@ if (grafoSalvo) {
     }
 }
 
+// Atualiza o contador de ID com base nos nós existentes (após carregar ou se for um novo grafo)
 if (nodes.length > 0) {
     const max = Math.max(
         ...nodes
@@ -784,6 +918,12 @@ if (nodes.length > 0) {
     contadorId = max + 1;
 }
 
+/**
+ * @brief Verifica se uma aresta faz parte de um caminho especificado.
+ * @param {Object} d - O objeto da aresta a ser verificada (com source, target, bidirectional).
+ * @param {Array<string>} caminho - Um array de IDs de nós que formam o caminho.
+ * @returns {boolean} Verdadeiro se a aresta faz parte do caminho, falso caso contrário.
+ */
 function fazParteDoCaminho(d, caminho) {
     for (let i = 0; i < caminho.length - 1; i++) {
         const a = caminho[i];
@@ -795,12 +935,15 @@ function fazParteDoCaminho(d, caminho) {
     return false;
 }
 
+/**
+ * @brief Atualiza o tamanho visual de todos os vértices no grafo.
+ */
 function atualizarVertices() {
     const strokeWidth = calcularTamanhoStroke(tamanhoVertice);
     zoomGroup.selectAll(".node")
         .attr("r", tamanhoVertice)
         .attr("stroke-width", strokeWidth);
-    zoomGroup.selectAll(".selected-node")
+    zoomGroup.selectAll(".selected-node") // Também atualiza nós de seleção temporária
         .attr("r", tamanhoVertice)
         .attr("stroke-width", strokeWidth);
     if (enumerarVertices) {
@@ -811,10 +954,16 @@ function atualizarVertices() {
     }
 }
 
+/**
+ * @brief Atualiza a largura visual de todas as arestas no grafo.
+ */
 function atualizarArestas() {
     zoomGroup.selectAll(".link").attr("stroke-width", larguraAresta);
 }
 
+/**
+ * @brief Atualiza o tamanho das setas das arestas direcionadas.
+ */
 function atualizarSetas() {
     svg.select("#arrowhead")
         .attr("markerWidth", tamanhoSeta)
@@ -825,14 +974,22 @@ function atualizarSetas() {
         .attr("markerHeight", tamanhoSeta);
 }
 
+/**
+ * @brief Atualiza a distância das setas do nó de destino para arestas direcionadas.
+ */
 function atualizarDistanciaSetas() {
     zoomGroup.selectAll(".link.directional")
         .attr("x2", d => calcularPontoFinalX(d, true))
         .attr("y2", d => calcularPontoFinalY(d, true));
 }
 
+/**
+ * @brief Redesenha completamente o grafo no SVG.
+ * Remove todos os elementos existentes e os recria com base nos arrays `nodes` e `links`.
+ * Garante que todas as configurações visuais sejam aplicadas.
+ */
 function desenharGrafoCompleto() {
-    zoomGroup.selectAll("*").remove();
+    zoomGroup.selectAll("*").remove(); // Limpa todos os elementos dentro do grupo de zoom
 
     const linksSelection = zoomGroup.selectAll(".link")
         .data(links)
@@ -842,7 +999,7 @@ function desenharGrafoCompleto() {
         .attr("stroke-width", larguraAresta)
         .attr("stroke", "#868baf")
         .attr("marker-end", d => {
-            return d.bidirectional ? null : "url(#arrowhead)";
+            return d.bidirectional ? null : "url(#arrowhead)"; // Aplica seta apenas para arestas direcionadas
         })
         .attr("x1", d => grafo.vertices.get(d.source).x)
         .attr("y1", d => grafo.vertices.get(d.source).y)
@@ -861,6 +1018,7 @@ function desenharGrafoCompleto() {
         .attr("fill", "#4960dd");
     configurarEventosNo(nodesSelection);
 
+    // Garante que todas as configurações visuais sejam aplicadas após o redesenho
     atualizarSetas();
     atualizarVertices();
     atualizarArestas();
@@ -869,6 +1027,11 @@ function desenharGrafoCompleto() {
     atualizarPesosArestas();
 }
 
+/**
+ * @brief Executa o algoritmo de Dijkstra no grafo.
+ * Destaca o caminho encontrado e exibe informações sobre o cálculo (tempo, nós explorados, custo).
+ * Esta função é exposta globalmente em `window`.
+ */
 window.executarDijkstra = function () {
     if (origemClicada === null || destinoClicada === null) {
         document.getElementById("status").textContent = "Status = Selecione Dois Vértices ⚠️";
@@ -893,23 +1056,26 @@ window.executarDijkstra = function () {
         document.getElementById("status").textContent = "Status = Caminho Calculado";
     }
 
+    // Destaca as arestas do caminho
     zoomGroup.selectAll(".link")
         .classed("path", d => fazParteDoCaminho(d, resultado.caminho))
         .attr("marker-end", d => {
             return d.bidirectional
                 ? null
                 : (fazParteDoCaminho(d, resultado.caminho)
-                    ? "url(#arrowhead-green)"
+                    ? "url(#arrowhead-green)" // Seta verde para arestas do caminho
                     : "url(#arrowhead)");
         });
 
+    // Destaca os nós do caminho
     zoomGroup.selectAll(".node")
         .classed("path", d => resultado.caminho.includes(d.id));
 
-    tabela.innerHTML = "";
+    tabela.innerHTML = ""; // Limpa a tabela
 
     const caminho = resultado.caminho;
 
+    // Preenche a tabela com os detalhes do caminho
     for (let i = 0; i < caminho.length; i++) {
         const atual = caminho[i];
         const proximo = caminho[i + 1] || "-";
@@ -929,6 +1095,10 @@ window.executarDijkstra = function () {
     }
 };
 
+/**
+ * @brief Reseta a seleção de origem/destino e limpa os resultados do Dijkstra.
+ * Esta função é exposta globalmente em `window`.
+ */
 window.resetarSelecao = function () {
     tabela.innerHTML = "";
     origemClicada = null;
@@ -936,12 +1106,13 @@ window.resetarSelecao = function () {
 
     circulosSelecionados.forEach(circulo => {
         circulo
-            .attr("fill", "#4960dd")
-            .attr("r", tamanhoVertice);
+            .attr("fill", "#4960dd") // Volta à cor padrão
+            .attr("r", tamanhoVertice); // Volta ao tamanho padrão
     });
 
     circulosSelecionados = [];
 
+    // Remove o destaque do caminho
     svg.selectAll(".link").classed("path", false);
     zoomGroup.selectAll(".link")
         .classed("path", false)
@@ -950,12 +1121,18 @@ window.resetarSelecao = function () {
     zoomGroup.selectAll(".node")
         .classed("path", false);
 
+    // Reseta os textos de status
     document.getElementById("velocidade").textContent = "Velocidade = 0s";
     document.getElementById("status").textContent = "Status = Aguardando";
     document.getElementById("explorados").textContent = "Nós explorados = 0";
     document.getElementById("custo").textContent = "Custo = 0";
 };
 
+/**
+ * @brief Limpa completamente o grafo, removendo todos os nós e arestas.
+ * Reinicia o estado do aplicativo para um grafo vazio.
+ * Esta função é exposta globalmente em `window`.
+ */
 window.limparGrafo = function () {
     grafo = new Grafo();
     nodes = [];
@@ -965,12 +1142,17 @@ window.limparGrafo = function () {
     destinoClicada = null;
     zoomGroup.selectAll(".selected-node.temp-selection").remove();
     circulosSelecionados = [];
-    contadorId = 1;
+    contadorId = 1; // Reseta o contador de ID
     desenharGrafoCompleto();
     resetarSelecao();
-    centralizarGrafo();
+    centralizarGrafo(); // Centraliza o SVG vazio
 };
 
+/**
+ * @brief Copia uma imagem do grafo para a área de transferência do sistema.
+ * Converte o SVG para um canvas e depois para um Blob de imagem.
+ * Esta função é exposta globalmente em `window`.
+ */
 window.copiarImagemGrafo = async function () {
     try {
         const svgElement = document.querySelector("svg");
@@ -1006,18 +1188,24 @@ window.copiarImagemGrafo = async function () {
 };
 
 
+/**
+ * @brief Centraliza o grafo visível dentro do SVG.
+ * Ajusta a escala e a translação do zoom para que todos os nós fiquem visíveis e centralizados.
+ */
 function centralizarGrafo() {
     const svgRect = svg.node().getBoundingClientRect();
     const svgWidth = svgRect.width;
     const svgHeight = svgRect.height;
 
     if (nodes.length === 0) {
+        // Se não há nós, centraliza a área visível do SVG
         const initialTransform = d3.zoomIdentity.scale(1, -1).translate(0, -svgHeight);
         svg.transition().duration(750).call(zoom.transform, initialTransform);
         currentTransform = initialTransform;
         return;
     }
 
+    // Calcula os limites do grafo
     const minX = d3.min(nodes, d => d.x);
     const maxX = d3.max(nodes, d => d.x);
     const minY = d3.min(nodes, d => d.y);
@@ -1026,27 +1214,31 @@ function centralizarGrafo() {
     const graphWidth = maxX - minX;
     const graphHeight = maxY - minY;
 
-    const padding = 0.1;
+    const padding = 0.1; // Espaço extra nas bordas
 
+    // Calcula a escala necessária para encaixar o grafo
     const scaleX = svgWidth / (graphWidth * (1 + padding));
     const scaleY = svgHeight / (graphHeight * (1 + padding));
     const finalScale = Math.min(scaleX, scaleY);
-    const effectiveScale = isFinite(finalScale) && finalScale > 0 ? finalScale : 1;
+    const effectiveScale = isFinite(finalScale) && finalScale > 0 ? finalScale : 1; // Garante uma escala válida
 
+    // Calcula o centro do grafo
     const graphCenterX = minX + graphWidth / 2;
     const graphCenterY = minY + graphHeight / 2;
 
+    // Cria a nova transformação para centralizar e escalar
     const newTransform = d3.zoomIdentity
-        .translate(svgWidth / 2, svgHeight / 2)
-        .scale(effectiveScale, -effectiveScale)
-        .translate(-graphCenterX, -graphCenterY);
+        .translate(svgWidth / 2, svgHeight / 2) // Move a origem para o centro do SVG
+        .scale(effectiveScale, -effectiveScale) // Aplica a escala (Y invertido)
+        .translate(-graphCenterX, -graphCenterY); // Move o centro do grafo para a origem
 
     svg.transition()
-        .duration(750)
+        .duration(750) // Animação suave
         .call(zoom.transform, newTransform);
 
     currentTransform = newTransform;
 }
 
+// Inicializa a barra de ferramentas e o menu principal ao carregar o script
 configurarToolbar();
 configurarMenuPrincipal();
