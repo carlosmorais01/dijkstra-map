@@ -1,4 +1,4 @@
-import { parseOSM } from '../graph/mapConverter.js'; // <-- você pode exportar a função parseOSM do código do Claudio
+import { parseOSM } from '../graph/mapConverter.js';
 
 const fileInput = document.getElementById("fileInput");
 
@@ -8,20 +8,32 @@ fileInput.addEventListener("change", (event) => {
 
     const reader = new FileReader();
     reader.onload = (e) => {
-        const osmText = e.target.result;
-        const grafo = parseOSM(osmText);
+        const content = String(e.target.result);
+        let grafo;
 
-        // Salva temporariamente no localStorage
-        localStorage.setItem("grafo-importado", JSON.stringify(grafo));
+        try {
+            if (file.name.endsWith(".osm")) {
+                grafo = parseOSM(content);
+            } else if (file.name.endsWith(".json")) {
+                grafo = JSON.parse(content);
+            } else {
+                alert("Formato de arquivo não suportado. Use .json ou .osm");
+                return;
+            }
 
-        // Redireciona para a página de visualização
-        window.location.href = "graphVisualization.html";
+            localStorage.setItem("grafo-importado", JSON.stringify(grafo));
+            window.location.href = "graphVisualization.html";
+        } catch (err) {
+            alert("Erro ao importar o arquivo. Verifique se o conteúdo está correto.");
+            console.error(err);
+        }
     };
+
     reader.readAsText(file);
 });
 
 document.getElementById("gerarGrafo").addEventListener("click", function (e) {
     e.preventDefault();
-    localStorage.removeItem("grafo-importado"); // Limpa grafo salvo
-    window.location.href = "graphVisualization.html"; // substitua pelo nome da página do grafo se for diferente
+    localStorage.removeItem("grafo-importado");
+    window.location.href = "graphVisualization.html";
 });
