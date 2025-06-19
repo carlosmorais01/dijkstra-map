@@ -1,22 +1,3 @@
-let grafoGlobal = null;
-let nomeBase = "grafo";
-
-document.getElementById("fileInput").addEventListener("change", (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        nomeBase = file.name.replace(/\.[^/.]+$/, "");
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            const text = e.target.result;
-            const graph = parseOSM(text);
-            grafoGlobal = graph;
-            document.getElementById("output").textContent = JSON.stringify(graph, null, 2);
-            document.getElementById("exportBtn").disabled = false;
-        };
-        reader.readAsText(file);
-    }
-});
-
 export function parseOSM(osmText) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(osmText, "text/xml");
@@ -34,7 +15,7 @@ export function parseOSM(osmText) {
 
         const { x, y } = converterParaUTM(lat, lon);
 
-        nodes.push({ id: internalId, lat, lon, x, y });
+        nodes.push({ id: internalId, x, y });
         internalId++;
     });
 
@@ -66,7 +47,7 @@ export function parseOSM(osmText) {
     return { nodes, edges };
 }
 
-function converterParaUTM(latDeg, lonDeg) {
+export function converterParaUTM(latDeg, lonDeg) {
     const PI = Math.PI;
 
     const a = 6378137.0;
@@ -112,5 +93,5 @@ function converterParaUTM(latDeg, lonDeg) {
         northing += 10000000.0;
     }
 
-    return { x: easting, y: northing, zone };
+    return { x: easting, y: northing, zone: zone }; // Retorna zone também se precisar.
 }
