@@ -10,7 +10,41 @@
 <body>
 <div class="menu">
   <div class="conteudo-menu">
-    <img class="principal-icon" src="public/icon/logo.svg" alt="Icon">
+    <div class="app-header">
+      <div class="main-dropdown-menu">
+        <a href="index.html"><img class="principal-icon" src="public/icon/logo.svg" alt="Icon"></a>
+        <img id="menu-toggle-arrow" src="public/icon/dropdown_menu_icon.svg" alt="Abrir menu" class="menu-toggle-arrow">
+        <div class="dropdown-content main-menu-content" id="app-main-menu">
+          <div class="dropdown-item has-submenu" id="menu-arquivo">
+            Arquivo <span class="submenu-arrow">▶</span>
+            <div class="submenu-content right-aligned">
+              <button class="menu-option" id="new-graph-btn">Criar novo grafo em branco</button>
+              <input type="file" id="file-input" accept=".json, .osm" style="display: none;">
+              <button class="menu-option" id="import-graph-btn">Importar novo grafo</button>
+              <button class="menu-option" id="copy-to-clipboard-btn">Copiar para a área de transferência</button>
+              <button class="menu-option" id="save-graph-btn">Salvar Grafo</button>
+            </div>
+          </div>
+          <div class="dropdown-item has-submenu" id="menu-visualizar">
+            Visualizar <span class="submenu-arrow">▶</span>
+            <div class="submenu-content right-aligned">
+              <label class="menu-option checkbox-option">
+                Enumerar Vértices
+                <input type="checkbox" id="enumerate-nodes-switch">
+                <span class="checkmark"></span>
+              </label>
+              <label class="menu-option checkbox-option">
+                Mostrar Pesos nas Arestas
+                <input type="checkbox" id="show-edge-weights-switch">
+                <span class="checkmark"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
     <p class="info-menu">Estatísticas do Algoritmo:</p>
     <div class="stats">
       <span id="velocidade">Velocidade = 0s</span><br>
@@ -60,7 +94,6 @@
   <button id="tool-node" class="tool-button" data-mode="add-node" title="Adicionar vértice">
     <img src="public/icon/Node_icon.svg" alt="Vértice">
   </button>
-
   <div class="tool-button-group">
     <button id="tool-edge-main" class="tool-button" data-mode="add-edge-undirected" title="Adicionar aresta">
       <img id="edge-main-icon" src="public/icon/aresta.svg" alt="Aresta Não Direcionada">
@@ -74,9 +107,11 @@
       </button>
     </div>
   </div>
-
   <button id="tool-flag" class="tool-button" data-mode="origem-destino" title="Selecionar origem/destino">
     <img src="public/icon/flag_icon.svg" alt="Origem/Destino">
+  </button>
+  <button id="tool-delete" class="tool-button" title="Apagar item selecionado">
+    <img src="public/icon/eraser_icon.svg" alt="Apagar" class="icon-tool">
   </button>
 </div>
 
