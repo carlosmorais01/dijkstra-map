@@ -179,8 +179,9 @@ destaque {
 }
 
 .conteudo-menu {
-    overflow: visible;
     flex-grow: 1;
+    overflow-y: auto;
+    padding-bottom: 30px;
 }
 
 .principal-icon {
