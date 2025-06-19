@@ -117,50 +117,76 @@ export class Grafo {
    * @param {string} destino - O identificador do vértice de destino.
    * @returns {{caminho: Array<string>, custo: number, visitados: number}} Um objeto contendo o caminho mais curto (array de IDs de vértice), o custo total e o número de nós explorados durante a busca.
    */
+  /**
+   * Executa o algoritmo de Dijkstra para encontrar o caminho mais curto entre dois vértices.
+   * Retorna o caminho, o custo total e o número de nós explorados.
+   * @param {string} origem - O identificador do vértice de origem.
+   * @param {string} destino - O identificador do vértice de destino.
+   * @returns {{caminho: Array<string>, custo: number, visitados: number}} Um objeto contendo o caminho mais curto (array de IDs de vértice), o custo total e o número de nós explorados durante a busca.
+   */
   dijkstra(origem, destino) {
     const dist = new Map();
     const prev = new Map();
-    const visitados = new Set();
+    // Não precisamos mais do 'visitados' como Set se o heap for bem gerenciado
+    // A contagem de nós explorados será feita por quantos elementos são extraídos do heap
     let nosExploradosContador = 0;
 
+    // Inicializa as distâncias e predecessores
     for (const id of this.vertices.keys()) {
       dist.set(id, Infinity);
       prev.set(id, null);
     }
     dist.set(origem, 0);
 
-    while (visitados.size < this.vertices.size) {
-      let u = null;
-      let menorDist = Infinity;
+    // Instancia a fila de prioridade
+    const minHeap = new MinHeap(); // Certifique-se de que a classe MinHeap está disponível (importada ou definida no mesmo arquivo)
+    minHeap.insert(origem, 0); // Adiciona o nó de origem com distância 0
 
-      for (const [id, d] of dist.entries()) {
-        if (!visitados.has(id) && d < menorDist) {
-          menorDist = d;
-          u = id;
-        }
+    // Enquanto houver elementos na fila de prioridade
+    while (!minHeap.isEmpty()) {
+      const { element: u, priority: currentDist } = minHeap.extractMin(); // Extrai o vértice com a menor distância
+
+      // Se já encontramos um caminho mais curto para 'u' do que o que estava no heap
+      // (pode acontecer se decreasePriority for chamado para um nó que já foi adicionado com distância maior)
+      if (currentDist > dist.get(u)) {
+        continue;
       }
 
-      if (u === null) break;
-      if (u === destino) break;
+      // Se alcançamos o destino, podemos parar
+      if (u === destino) {
+        break;
+      }
 
-      visitados.add(u);
-      nosExploradosContador++;
+      nosExploradosContador++; // Incrementa o contador de nós explorados
 
+      // Itera sobre os vizinhos do vértice atual
       for (const [vizinhoId] of this.adjacencia.get(u).entries()) {
         const distanciaAresta = this.distanciaEntre(u, vizinhoId);
 
+        // Garante que a aresta existe e tem um peso finito
         if (distanciaAresta === null || !isFinite(distanciaAresta)) {
           continue;
         }
 
         const alt = dist.get(u) + distanciaAresta;
+
+        // Se um caminho mais curto para o vizinho for encontrado
         if (alt < dist.get(vizinhoId)) {
-          dist.set(vizinhoId, alt);
-          prev.set(vizinhoId, u);
+          dist.set(vizinhoId, alt); // Atualiza a distância
+          prev.set(vizinhoId, u); // Atualiza o predecessor
+
+          // Se o vizinho já estiver no heap, atualiza sua prioridade
+          // Caso contrário, insere-o no heap
+          if (minHeap.map.has(vizinhoId)) {
+            minHeap.decreasePriority(vizinhoId, alt);
+          } else {
+            minHeap.insert(vizinhoId, alt);
+          }
         }
       }
     }
 
+    // Reconstrução do caminho (mesma lógica que você já tem)
     const caminho = [];
     let atual = destino;
     if (dist.get(destino) === Infinity) {
@@ -207,5 +233,91 @@ export class Grafo {
     const dx = fromVertex.x - toVertex.x;
     const dy = fromVertex.y - toVertex.y;
     return Math.sqrt(dx * dx + dy * dy);
+  }
+}
+
+class MinHeap {
+  constructor() {
+    this.heap = [];
+    this.map = new Map(); // Para acesso rápido aos elementos e suas posições no heap
+  }
+
+  getParentIndex(i) { return Math.floor((i - 1) / 2); }
+  getLeftChildIndex(i) { return 2 * i + 1; }
+  getRightChildIndex(i) { return 2 * i + 2; }
+
+  hasParent(i) { return this.getParentIndex(i) >= 0; }
+  hasLeftChild(i) { return this.getLeftChildIndex(i) < this.heap.length; }
+  hasRightChild(i) { return this.getRightChildIndex(i) < this.heap.length; }
+
+  getParent(i) { return this.heap[this.getParentIndex(i)]; }
+  getLeftChild(i) { return this.heap[this.getLeftChildIndex(i)]; }
+  getRightChild(i) { return this.heap[this.getRightChildIndex(i)]; }
+
+  swap(i, j) {
+    [this.heap[i], this.heap[j]] = [this.heap[j], this.heap[i]];
+    this.map.set(this.heap[i].element, i);
+    this.map.set(this.heap[j].element, j);
+  }
+
+  insert(element, priority) {
+    const node = { element, priority };
+    this.heap.push(node);
+    const index = this.heap.length - 1;
+    this.map.set(element, index);
+    this.heapifyUp(index);
+  }
+
+  extractMin() {
+    if (this.heap.length === 0) return null;
+    if (this.heap.length === 1) {
+      const min = this.heap.pop();
+      this.map.delete(min.element);
+      return min;
+    }
+
+    const min = this.heap[0];
+    this.map.delete(min.element);
+    this.heap[0] = this.heap.pop();
+    this.map.set(this.heap[0].element, 0);
+    this.heapifyDown(0);
+    return min;
+  }
+
+  decreasePriority(element, newPriority) {
+    let index = this.map.get(element);
+    if (index === undefined) return; // Elemento não está no heap
+
+    this.heap[index].priority = newPriority;
+    this.heapifyUp(index);
+  }
+
+  heapifyUp(index) {
+    while (this.hasParent(index) && this.getParent(index).priority > this.heap[index].priority) {
+      const parentIndex = this.getParentIndex(index);
+      this.swap(index, parentIndex);
+      index = parentIndex;
+    }
+  }
+
+  heapifyDown(index) {
+    let smallestChildIndex = index;
+
+    if (this.hasLeftChild(index) && this.getLeftChild(index).priority < this.heap[smallestChildIndex].priority) {
+      smallestChildIndex = this.getLeftChildIndex(index);
+    }
+
+    if (this.hasRightChild(index) && this.getRightChild(index).priority < this.heap[smallestChildIndex].priority) {
+      smallestChildIndex = this.getRightChildIndex(index);
+    }
+
+    if (smallestChildIndex !== index) {
+      this.swap(index, smallestChildIndex);
+      this.heapifyDown(smallestChildIndex);
+    }
+  }
+
+  isEmpty() {
+    return this.heap.length === 0;
   }
 }
