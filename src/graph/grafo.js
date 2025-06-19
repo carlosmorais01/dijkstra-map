@@ -1,10 +1,37 @@
+/**
+ * @class Grafo
+ * @description Representa um grafo com vértices e arestas, permitindo operações como adição, remoção e busca de caminhos.
+ */
 export class Grafo {
+  /**
+   * @private
+   * @property {Map<string, {id: string, x: number, y: number}>} vertices - Armazena os vértices do grafo, onde a chave é o ID do vértice e o valor são suas coordenadas.
+   */
+  vertices = new Map();
+
+  /**
+   * @private
+   * @property {Map<string, Map<string, {bidirectional: boolean}>>} adjacencia - Armazena a lista de adjacência do grafo, onde a chave é o ID do vértice de origem e o valor é um mapa de vértices de destino com informações da aresta (e.g., se é bidirecional).
+   */
+  adjacencia = new Map();
+
+  /**
+   * @constructor
+   * @description Inicializa uma nova instância da classe Grafo.
+   */
   constructor() {
-    this.vertices = new Map(); // Armazena { id: { x, y } }
-    this.adjacencia = new Map(); // Armazena id_origem -> Map<id_destino, {peso, bidirectional}>
+    this.vertices = new Map();
+    this.adjacencia = new Map();
   }
 
-  // Carrega grafo a partir de um JSON (com nodes e edges)
+  /**
+   * Carrega o grafo a partir de um objeto JSON contendo nós (nodes) e arestas (edges).
+   * Os vértices são adicionados com seus IDs e coordenadas (x, y).
+   * As arestas são adicionadas com seus IDs de origem e destino, e se são bidirecionais.
+   * @param {object} data - O objeto JSON contendo 'nodes' e 'edges'.
+   * @param {Array<object>} data.nodes - Um array de objetos de nó, cada um com 'id', 'x' e 'y'.
+   * @param {Array<object>} data.edges - Um array de objetos de aresta, cada um com 'from', 'to' e 'bidirectional'.
+   */
   carregarDoJSON(data) {
     this.vertices = new Map();
     this.adjacencia = new Map();
@@ -18,40 +45,61 @@ export class Grafo {
     });
   }
 
+  /**
+   * Adiciona um novo vértice ao grafo. Se o vértice já existir, suas coordenadas (x, y) serão atualizadas.
+   * @param {string} id - O identificador único do vértice.
+   * @param {number} x - A coordenada X do vértice.
+   * @param {number} y - A coordenada Y do vértice.
+   */
   adicionarVertice(id, x, y) {
     if (!this.vertices.has(id)) {
       this.vertices.set(id, { id: id, x: x, y: y });
       this.adjacencia.set(id, new Map());
     } else {
-      // OPCIONAL: Atualizar posição se o vértice já existe
       this.vertices.get(id).x = x;
       this.vertices.get(id).y = y;
     }
   }
 
+  /**
+   * Remove um vértice e todas as arestas associadas a ele do grafo.
+   * @param {string} id - O identificador do vértice a ser removido.
+   */
   removerVertice(id) {
     if (this.vertices.has(id)) {
       this.vertices.delete(id);
-      this.adjacencia.delete(id); // Remove o próprio vértice da lista de adjacência
+      this.adjacencia.delete(id);
 
-      // Remove todas as arestas que apontam para este vértice
       this.adjacencia.forEach(adjList => {
         adjList.delete(id);
       });
     }
   }
 
+  /**
+   * Adiciona uma aresta entre dois vértices no grafo.
+   * Se a aresta for bidirecional, uma aresta também será adicionada na direção oposta.
+   * A aresta não armazena peso, pois este é calculado dinamicamente.
+   * @param {string} fromId - O identificador do vértice de origem.
+   * @param {string} toId - O identificador do vértice de destino.
+   * @param {boolean} [bidirectional=false] - Indica se a aresta é bidirecional.
+   */
   adicionarAresta(fromId, toId, bidirectional = false) {
     if (!this.vertices.has(fromId) || !this.vertices.has(toId)) {
       console.error("Um ou ambos os vértices não existem!");
       return;
     }
-    // NÃO ARMAZENAMOS O PESO AQUI, ELE SERÁ CALCULADO DINAMICAMENTE
     this.adjacencia.get(fromId).set(toId, { bidirectional: bidirectional });
     if (bidirectional) {
       this.adjacencia.get(toId).set(fromId, { bidirectional: bidirectional });
     }
   }
+
+  /**
+   * Remove uma aresta entre dois vértices. Se a aresta for bidirecional, a aresta na direção oposta também será removida.
+   * @param {string} fromId - O identificador do vértice de origem da aresta a ser removida.
+   * @param {string} toId - O identificador do vértice de destino da aresta a ser removida.
+   */
   removerAresta(fromId, toId) {
     if (this.adjacencia.has(fromId)) {
       const edgeData = this.adjacencia.get(fromId).get(toId);
@@ -62,25 +110,29 @@ export class Grafo {
     }
   }
 
+  /**
+   * Executa o algoritmo de Dijkstra para encontrar o caminho mais curto entre dois vértices.
+   * Retorna o caminho, o custo total e o número de nós explorados.
+   * @param {string} origem - O identificador do vértice de origem.
+   * @param {string} destino - O identificador do vértice de destino.
+   * @returns {{caminho: Array<string>, custo: number, visitados: number}} Um objeto contendo o caminho mais curto (array de IDs de vértice), o custo total e o número de nós explorados durante a busca.
+   */
   dijkstra(origem, destino) {
     const dist = new Map();
     const prev = new Map();
     const visitados = new Set();
-    let nosExploradosContador = 0; // NOVO: Contador para nós explorados
+    let nosExploradosContador = 0;
 
-    // Inicializa distâncias e predecessores
     for (const id of this.vertices.keys()) {
       dist.set(id, Infinity);
       prev.set(id, null);
     }
     dist.set(origem, 0);
 
-    // Loop principal do Dijkstra
     while (visitados.size < this.vertices.size) {
       let u = null;
       let menorDist = Infinity;
 
-      // Encontra o vértice não visitado com a menor distância
       for (const [id, d] of dist.entries()) {
         if (!visitados.has(id) && d < menorDist) {
           menorDist = d;
@@ -88,41 +140,34 @@ export class Grafo {
         }
       }
 
-      // Se não há mais vértices alcançáveis ou o destino foi encontrado
-      if (u === null) break; // Não há mais nós alcançáveis
-      if (u === destino) break; // Destino encontrado
+      if (u === null) break;
+      if (u === destino) break;
 
       visitados.add(u);
-      nosExploradosContador++; // Incrementa o contador ao visitar um nó
+      nosExploradosContador++;
 
-      // Itera sobre os vizinhos do vértice 'u'
-      // ALTERADO: Agora iteramos sobre a lista de adjacência de 'u'
-      for (const [vizinhoId, edgeData] of this.adjacencia.get(u).entries()) { // ALTERADO AQUI
-        // NOVO: OBTÉM A DISTÂNCIA (PESO) DINAMICAMENTE
+      for (const [vizinhoId] of this.adjacencia.get(u).entries()) {
         const distanciaAresta = this.distanciaEntre(u, vizinhoId);
 
-        // Certifica-se de que a aresta realmente existe e tem uma distância finita
         if (distanciaAresta === null || !isFinite(distanciaAresta)) {
-          continue; // Pula se não houver aresta válida ou se o vizinho não existe/estiver desconectado
+          continue;
         }
 
-        const alt = dist.get(u) + distanciaAresta; // USANDO A DISTÂNCIA CALCULADA
-        if (alt < dist.get(vizinhoId)) { // USANDO vizinhoId, não vizinho.id
-          dist.set(vizinhoId, alt); // USANDO vizinhoId
-          prev.set(vizinhoId, u); // USANDO vizinhoId
+        const alt = dist.get(u) + distanciaAresta;
+        if (alt < dist.get(vizinhoId)) {
+          dist.set(vizinhoId, alt);
+          prev.set(vizinhoId, u);
         }
       }
     }
 
-    // Reconstruir caminho
     const caminho = [];
     let atual = destino;
-    // NOVO: Adiciona verificação para garantir que o destino é alcançável
     if (dist.get(destino) === Infinity) {
       return {
         caminho: [],
         custo: Infinity,
-        visitados: nosExploradosContador // Retorna o contador correto mesmo sem caminho
+        visitados: nosExploradosContador
       };
     }
 
@@ -134,37 +179,33 @@ export class Grafo {
     return {
       caminho,
       custo: dist.get(destino),
-      visitados: nosExploradosContador // Retorna o contador de nós explorados
+      visitados: nosExploradosContador
     };
   }
 
   /**
-   * NOVO/ALTERADO: CALCULA A DISTÂNCIA EUCLIDIANA ENTRE DOIS VÉRTICES.
-   * @param {string} fromId - ID DO VÉRTICE DE ORIGEM.
-   * @param {string} toId - ID DO VÉRTICE DE DESTINO.
-   * @returns {number|null} A DISTÂNCIA OU NULL SE OS VÉRTICES NÃO EXISTIREM OU NÃO HOUVER CONEXÃO.
+   * Calcula a distância euclidiana entre dois vértices.
+   * Retorna a distância se houver uma aresta entre eles, Infinity se não houver aresta, ou null se um dos vértices não existir.
+   * @param {string} fromId - O ID do vértice de origem.
+   * @param {string} toId - O ID do vértice de destino.
+   * @returns {number|null} A distância euclidiana entre os vértices, Infinity se não houver aresta, ou null se um dos vértices não for encontrado.
    */
   distanciaEntre(fromId, toId) {
     const fromVertex = this.vertices.get(fromId);
     const toVertex = this.vertices.get(toId);
 
     if (!fromVertex || !toVertex) {
-      return null; // VÉRTICES NÃO ENCONTRADOS
+      return null;
     }
 
-    // VERIFICA SE EXISTE UMA ARESTA DIRECIONAL (FROM -> TO)
     const edgeExists = this.adjacencia.has(fromId) && this.adjacencia.get(fromId).has(toId);
 
-    // SE NÃO HOUVER ARESTA ENTRE ELES, RETORNA NULL OU INFINITY, DEPENDENDO DA SUA LÓGICA
-    // PARA ALGORITMOS DE BUSCA, INFINITY É GERALMENTE MELHOR.
     if (!edgeExists) {
-      return Infinity; // OU UM VALOR QUE INDIQUE AUSÊNCIA DE ARESTA
+      return Infinity;
     }
 
-    // CALCULA A DISTÂNCIA EUCLIDIANA
     const dx = fromVertex.x - toVertex.x;
     const dy = fromVertex.y - toVertex.y;
     return Math.sqrt(dx * dx + dy * dy);
   }
-
 }
