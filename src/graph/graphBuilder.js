@@ -847,28 +847,6 @@ function cancelarDesenhoAresta() {
     startNode = null;
 }
 
-// Event listener para a tecla 'Delete' para remover itens selecionados
-document.addEventListener("keydown", (e) => {
-    if (modoAtual !== "selecionar" || !itemSelecionado) return;
-    if (e.key === "Delete") {
-        if (itemSelecionado.id) { // Se for um nó
-            const id = itemSelecionado.id;
-            grafo.removerVertice(id);
-            nodes = nodes.filter(n => n.id !== id);
-            links = links.filter(l => l.source !== id && l.target !== id);
-            atualizarContagemNos();
-        } else if (itemSelecionado.source && itemSelecionado.target) { // Se for uma aresta
-            grafo.removerAresta(itemSelecionado.source, itemSelecionado.target);
-            links = links.filter(l =>
-                !(l.source === itemSelecionado.source && l.target === itemSelecionado.target) &&
-                !(l.bidirectional && l.source === itemSelecionado.target && l.target === itemSelecionado.source)
-            );
-        }
-        itemSelecionado = null;
-        desenharGrafoCompleto();
-    }
-});
-
 /**
  * @brief Encontra o vértice mais próximo a uma dada coordenada.
  * @param {number} xCoordInZoomGroup - Coordenada X no grupo de zoom.
