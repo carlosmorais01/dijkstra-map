@@ -9,42 +9,42 @@
 </head>
 <body>
 <div class="menu">
-  <div class="conteudo-menu">
-    <div class="app-header">
-      <div class="main-dropdown-menu">
-        <a href="index.html"><img class="principal-icon" src="public/icon/logo.svg" alt="Icon"></a>
-        <img id="menu-toggle-arrow" src="public/icon/dropdown_menu_icon.svg" alt="Abrir menu" class="menu-toggle-arrow">
-        <div class="dropdown-content main-menu-content" id="app-main-menu">
-          <div class="dropdown-item has-submenu" id="menu-arquivo">
-            Arquivo <span class="submenu-arrow">▶</span>
-            <div class="submenu-content right-aligned">
-              <button class="menu-option" id="new-graph-btn">Criar novo grafo em branco</button>
-              <input type="file" id="file-input" accept=".json, .osm" style="display: none;">
-              <button class="menu-option" id="import-graph-btn">Importar novo grafo</button>
-              <button class="menu-option" id="copy-to-clipboard-btn">Copiar para a área de transferência</button>
-              <button class="menu-option" id="save-graph-btn">Salvar Grafo</button>
-            </div>
-          </div>
-          <div class="dropdown-item has-submenu" id="menu-visualizar">
-            Visualizar <span class="submenu-arrow">▶</span>
-            <div class="submenu-content right-aligned">
-              <label class="menu-option checkbox-option">
-                Enumerar Vértices
-                <input type="checkbox" id="enumerate-nodes-switch">
-                <span class="checkmark"></span>
-              </label>
-              <label class="menu-option checkbox-option">
-                Mostrar Pesos nas Arestas
-                <input type="checkbox" id="show-edge-weights-switch">
-                <span class="checkmark"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
+  <div class="app-header">
+    <div class="main-dropdown-menu">
+      <a href="index.html"><img class="principal-icon" src="public/icon/logo.svg" alt="Icon"></a>
+      <img id="menu-toggle-arrow" src="public/icon/dropdown_menu_icon.svg" alt="Abrir menu" class="menu-toggle-arrow">
     </div>
+  </div>
 
+  <div class="dropdown-content main-menu-content" id="app-main-menu">
+    <div class="dropdown-item has-submenu" id="menu-arquivo">
+      Arquivo <span class="submenu-arrow">▶</span>
+      <div class="submenu-content right-aligned">
+        <button class="menu-option" id="new-graph-btn">Criar novo grafo em branco</button>
+        <input type="file" id="file-input" accept=".json, .osm" style="display: none;">
+        <button class="menu-option" id="import-graph-btn">Importar novo grafo</button>
+        <button class="menu-option" id="copy-to-clipboard-btn">Copiar para a área de transferência</button>
+        <button class="menu-option" id="save-graph-btn">Salvar Grafo</button>
+      </div>
+    </div>
+    <div class="dropdown-item has-submenu" id="menu-visualizar">
+      Visualizar <span class="submenu-arrow">▶</span>
+      <div class="submenu-content right-aligned">
+        <label class="menu-option checkbox-option">
+          Enumerar Vértices
+          <input type="checkbox" id="enumerate-nodes-switch">
+          <span class="checkmark"></span>
+        </label>
+        <label class="menu-option checkbox-option">
+          Mostrar Pesos nas Arestas
+          <input type="checkbox" id="show-edge-weights-switch">
+          <span class="checkmark"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="conteudo-menu">
     <p class="info-menu">Estatísticas do Algoritmo:</p>
     <div class="stats">
       <span id="velocidade">Velocidade = 0s</span><br>
@@ -53,7 +53,8 @@
       <span id="custo">Custo = 0</span><br>
       <span id="total-nodes">Total de Nós = 0</span><br>
     </div>
-    <div class="ajustes"> <p class="info-menu">Ajustes de Visualização:</p>
+    <div class="ajustes">
+      <p class="info-menu">Ajustes de Visualização:</p>
       <label for="slider-node-size">Tamanho dos Vértices</label>
       <input type="range" id="slider-node-size" min="0.001" max="10" step="0.000000001" value="3">
 
