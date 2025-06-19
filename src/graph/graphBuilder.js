@@ -1000,43 +1000,70 @@ function atualizarDistanciaSetas() {
  * Garante que todas as configurações visuais sejam aplicadas.
  */
 function desenharGrafoCompleto() {
-    zoomGroup.selectAll("*").remove(); // Limpa todos os elementos dentro do grupo de zoom
-
+    // --- Links (Arestas) ---
     const linksSelection = zoomGroup.selectAll(".link")
-        .data(links)
-        .enter()
-        .append("line")
-        .attr("class", d => d.bidirectional ? "link" : "link directional")
-        .attr("stroke-width", larguraAresta)
-        .attr("stroke", "#868baf")
-        .attr("marker-end", d => {
-            return d.bidirectional ? null : "url(#arrowhead)"; // Aplica seta apenas para arestas direcionadas
-        })
-        .attr("x1", d => grafo.vertices.get(d.source).x)
-        .attr("y1", d => grafo.vertices.get(d.source).y)
-        .attr("x2", d => calcularPontoFinalX(d, true))
-        .attr("y2", d => calcularPontoFinalY(d, true));
-    configurarEventosAresta(linksSelection);
+        .data(links, d => `${d.source}-${d.target}-${d.bidirectional}`);
 
+    linksSelection.join(
+        enter => enter.append("line")
+            .attr("class", d => d.bidirectional ? "link" : "link directional")
+            .attr("stroke-width", larguraAresta)
+            .attr("stroke", "#868baf")
+            .attr("marker-end", d => {
+                return d.bidirectional ? null : "url(#arrowhead)";
+            })
+            .attr("x1", d => grafo.vertices.get(d.source).x)
+            .attr("y1", d => grafo.vertices.get(d.source).y)
+            .attr("x2", d => calcularPontoFinalX(d, true))
+            .attr("y2", d => calcularPontoFinalY(d, true))
+            .call(configurarEventosAresta), // Chama a função de configuração de eventos para as novas arestas
+        update => update // Para arestas existentes, apenas atualiza atributos se necessário
+            .attr("stroke-width", larguraAresta) // Atualiza largura caso slider mude
+            .attr("stroke", "#868baf") // Volta cor padrão
+            .attr("marker-end", d => {
+                return d.bidirectional ? null : "url(#arrowhead)"; // Volta seta padrão
+            })
+            .attr("x1", d => grafo.vertices.get(d.source).x)
+            .attr("y1", d => grafo.vertices.get(d.source).y)
+            .attr("x2", d => calcularPontoFinalX(d, true))
+            .attr("y2", d => calcularPontoFinalY(d, true)),
+        exit => exit.remove() // Remove arestas que não existem mais nos dados
+    );
+
+    // --- Nodes (Vértices) ---
     const nodesSelection = zoomGroup.selectAll(".node")
-        .data(nodes)
-        .enter()
-        .append("circle")
-        .attr("class", "node")
-        .attr("r", tamanhoVertice)
-        .attr("cx", d => d.x)
-        .attr("cy", d => d.y)
-        .attr("fill", "#4960dd");
-    configurarEventosNo(nodesSelection);
+        .data(nodes, d => d.id); // Key function para identificação única
 
-    // Garante que todas as configurações visuais sejam aplicadas após o redesenho
+    nodesSelection.join(
+        enter => enter.append("circle")
+            .attr("class", "node")
+            .attr("r", tamanhoVertice)
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y)
+            .attr("fill", "#4960dd")
+            .call(configurarEventosNo), // Chama a função de configuração de eventos para os novos nós
+        update => update // Para nós existentes, apenas atualiza atributos se necessário
+            .attr("r", tamanhoVertice) // Atualiza raio caso slider mude
+            .attr("cx", d => d.x) // Atualiza posição
+            .attr("cy", d => d.y) // Atualiza posição
+            .attr("fill", "#4960dd"), // Volta cor padrão
+        exit => exit.remove() // Remove nós que não existem mais nos dados
+    );
+
+// As chamadas para atualizar configurações visuais agora são mais importantes.
+// Elas devem atualizar os elementos *após* o join, pois eles podem ter sido criados ou atualizados.
     atualizarSetas();
     atualizarVertices();
     atualizarArestas();
     atualizarDistanciaSetas();
     atualizarEnumeracaoVertices();
     atualizarPesosArestas();
-    atualizarContagemNos();
+
+// Garante que nós e rótulos estejam acima das arestas
+    zoomGroup.selectAll(".link").lower(); // Manda links para o fundo
+    zoomGroup.selectAll(".node").raise(); // Traz nodes para frente
+    zoomGroup.selectAll(".node-label").raise(); // Traz labels para frente
+    zoomGroup.selectAll(".selected-node.temp-selection").raise(); // Traz seleções temporárias para frente
 }
 
 /**
@@ -1101,19 +1128,21 @@ window.executarDijkstra = function () {
     // Preenche a tabela com os detalhes do caminho
     for (let i = 0; i < caminho.length; i++) {
         const atual = caminho[i];
-        const proximo = caminho[i + 1] || "-";
+        // Modificação AQUI: verifica se é o último elemento do caminho
+        const proximo = (i + 1 < caminho.length) ? caminho[i + 1] : "-";
 
         let distancia = "-";
+        // A condição para calcular a distância permanece a mesma, pois 'proximo' não será '-'
         if (proximo !== "-") {
             distancia = grafo.distanciaEntre(atual, proximo)?.toFixed(2) ?? "-";
         }
 
         const linha = document.createElement("tr");
         linha.innerHTML = `
-            <td>${atual}</td>
-            <td>${distancia}</td>
-            <td>${proximo}</td>
-        `;
+        <td>${atual}</td>
+        <td>${distancia}</td>
+        <td>${proximo}</td>
+    `;
         tabela.appendChild(linha);
     }
 };
