@@ -4,7 +4,6 @@ import {Grafo} from './grafo.js';
 let origemClicada = null;
 let destinoClicada = null;
 let circulosSelecionados = [];
-let xScale, yScale; // SCALES SERÃO INICIALIZADAS EM desenharGrafo()
 
 const svg = d3.select("svg");
 const tabela = document.querySelector("#tabela-caminho tbody");
@@ -12,14 +11,15 @@ let grafo = new Grafo();
 let nodes = [], links = [];
 let contadorId = 1;
 
-const zoomGroup = svg.append("g");
-const nodeTooltip = d3.select("#node-tooltip"); // NOVO: SELECIONA O ELEMENTO DO TOOLTIP
+const zoomGroup = svg.append("g"); // Removido .attr("transform", "scale(1, -1)")
+
+const nodeTooltip = d3.select("#node-tooltip");
 
 // --- VARIÁVEIS DE ESTADO PARA ADIÇÃO DE ARESTAS (PREPARAÇÃO PARA O PONTO 3) ---
 let isDrawingEdge = false;
 let startNode = null;
-let currentLine = null; // LINHA TEMPORÁRIA PARA A ARESTA ENQUANTO É DESENHADA
-let edgeType = 'undirected'; // TIPO DE ARESTA PADRÃO: 'undirected' OU 'directed'
+let currentLine = null;
+let edgeType = 'undirected';
 
 // --- CONFIGURAÇÕES DE ESTILO (SLIDERS) ---
 let tamanhoVertice = 3;
@@ -51,7 +51,7 @@ document.getElementById("slider-arrow-gap").addEventListener("input", e => {
 svg.append("defs").append("marker")
     .attr("id", "arrowhead-green")
     .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 0)
+    .attr("refX", 10) // Ajustado
     .attr("refY", 0)
     .attr("markerWidth", 4)
     .attr("markerHeight", 4)
@@ -63,7 +63,7 @@ svg.append("defs").append("marker")
 svg.append("defs").append("marker")
     .attr("id", "arrowhead")
     .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 0)
+    .attr("refX", 10) // Ajustado
     .attr("refY", 0)
     .attr("markerWidth", 4)
     .attr("markerHeight", 4)
@@ -73,82 +73,62 @@ svg.append("defs").append("marker")
     .attr("fill", "#868baf");
 
 // --- ESTADO DA APLICAÇÃO ---
-let modoAtual = "selecionar"; // MODO PADRÃO
+let modoAtual = "selecionar";
 let itemSelecionado = null;
 
 // --- FUNÇÕES DE INTERFACE DO USUÁRIO (UI) ---
 
-/**
- * CONFIGURA OS BOTÕES DA BARRA DE FERRAMENTAS PARA ALTERNAR O MODO ATUAL.
- */
 function configurarToolbar() {
-    // SELECIONA TODOS OS BOTÕES DE FERRAMENTA, EXCETO AS OPÇÕES DO DROPDOWN DE ARESTAS E O BOTÃO PRINCIPAL DE ARESTA
     document.querySelectorAll(".tool-button:not(.edge-option):not(#tool-edge-main)").forEach(btn => {
         btn.addEventListener("click", () => {
-            // CANCELA QUALQUER DESENHO DE ARESTA SE O MODO FOR ALTERADO
             cancelarDesenhoAresta();
-            // NOVO: RESETA A SELEÇÃO DE ORIGEM/DESTINO E O CAMINHO VISUAL AO MUDAR DE FERRAMENTA
-            if (modoAtual === "origem-destino") { // SÓ RESETA SE ESTAVA NO MODO DE SELEÇÃO DE ORIGEM/DESTINO
+            if (modoAtual === "origem-destino") {
                 window.resetarSelecao();
             }
-
             document.querySelectorAll(".tool-button").forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
-            modoAtual = btn.dataset.mode; // AGORA OS BOTÕES TÊM data-mode
-            resetarSelecaoVisual(); // RESETA SELEÇÃO VISUAL GENÉRICA (NÓS/ARESTAS)
-
-            // ESCONDE O DROPDOWN SE O BOTÃO CLICADO NÃO FOR O PRINCIPAL DE ARESTA
+            modoAtual = btn.dataset.mode;
+            resetarSelecaoVisual();
             document.querySelector(".edge-dropdown-content").classList.remove("show");
         });
     });
 
-    // LÓGICA DO DROPDOWN DE ARESTAS (CÓDIGO JÁ IMPLEMENTADO DO PONTO 3)
     const edgeMainButton = document.getElementById("tool-edge-main");
     const edgeDropdown = document.querySelector(".edge-dropdown-content");
     const edgeMainIcon = document.getElementById("edge-main-icon");
     const dropdownArrow = document.querySelector(".dropdown-arrow");
 
-    // O BOTÃO PRINCIPAL (ÍCONE) APENAS ATIVA O MODO DE ARESTA, NÃO ABRE O DROPDOWN
     edgeMainButton.addEventListener("click", () => {
-        // NOVO: RESETA A SELEÇÃO DE ORIGEM/DESTINO E O CAMINHO VISUAL AO MUDAR DE FERRAMENTA
         if (modoAtual === "origem-destino") {
             window.resetarSelecao();
         }
-
         document.querySelectorAll(".tool-button").forEach(b => b.classList.remove("active"));
         edgeMainButton.classList.add("active");
         modoAtual = edgeMainButton.dataset.mode;
         resetarSelecaoVisual();
     });
 
-    // EVENT LISTENER APENAS PARA A SETA (para abrir/fechar o dropdown)
     dropdownArrow.addEventListener("click", (event) => {
         event.stopPropagation();
         edgeDropdown.classList.toggle("show");
     });
 
-    // LÓGICA PARA AS OPÇÕES DENTRO DO DROPDOWN
     document.querySelectorAll(".edge-option").forEach(optionBtn => {
         optionBtn.addEventListener("click", () => {
-            // NOVO: RESETA A SELEÇÃO DE ORIGEM/DESTINO E O CAMINHO VISUAL AO MUDAR DE FERRAMENTA
             if (modoAtual === "origem-destino") {
                 window.resetarSelecao();
             }
-
             edgeType = optionBtn.dataset.edgeType;
             edgeMainButton.dataset.mode = `add-edge-${edgeType}`;
             modoAtual = `add-edge-${edgeType}`;
             edgeMainIcon.src = optionBtn.querySelector("img").src;
             edgeDropdown.classList.remove("show");
             resetarSelecaoVisual();
-
-            // ATIVA O BOTÃO PRINCIPAL AO SELECIONAR UMA OPÇÃO NO DROPDOWN
             document.querySelectorAll(".tool-button").forEach(b => b.classList.remove("active"));
             edgeMainButton.classList.add("active");
         });
     });
 
-    // FECHA O DROPDOWN SE CLICAR FORA DELE
     document.addEventListener("click", (event) => {
         if (!edgeMainButton.contains(event.target) && !edgeDropdown.contains(event.target)) {
             edgeDropdown.classList.remove("show");
@@ -156,45 +136,52 @@ function configurarToolbar() {
     });
 }
 
-/**
- * REMOVE A MARCAÇÃO VISUAL DO ELEMENTO SELECIONADO.
- */
 function resetarSelecaoVisual() {
     zoomGroup.selectAll(".node").attr("fill", "#4960dd").classed("selecionado", false);
     zoomGroup.selectAll(".link").attr("stroke", "#868baf").classed("selecionado", false);
     itemSelecionado = null;
 }
 
-/**
- * MANIPULADOR DE EVENTO DE CLIQUE NO SVG.
- * UTILIZADO PARA ADICIONAR NÓS E SELEÇÃO DE ORIGEM E DESTINO.
- */
-svg.on("click", (event) => {
-    const [mouseX, mouseY] = d3.pointer(event);
-    const transform = d3.zoomTransform(svg.node());
-    // CONVERTE AS COORDENADAS DO MOUSE DA TELA PARA O SISTEMA DE COORDENADAS DO ZOOMGROUP
-    const xCoordInZoomGroup = (mouseX - transform.x) / transform.k;
-    const yCoordInZoomGroup = (mouseY - transform.y) / transform.k;
+let currentTransform = d3.zoomIdentity;
 
-    // LÓGICA PARA ADICIONAR NÓS QUANDO O MODO É 'add-node'
+const zoom = d3.zoom()
+    .scaleExtent([0.2, 2000])
+    .on("zoom", (event) => {
+        currentTransform = event.transform;
+        zoomGroup.attr("transform", currentTransform);
+    });
+
+svg.call(zoom);
+
+svg.on("click", (event) => {
     if (modoAtual === "add-node") {
+        const [mouseX, mouseY] = d3.pointer(event);
+        const [xLogico, yLogico] = currentTransform.invert([mouseX, mouseY]);
+
         const id = gerarIdSequencial();
-        const xLogico = xScale.invert(xCoordInZoomGroup);
-        const yLogico = yScale.invert(yCoordInZoomGroup);
         grafo.adicionarVertice(id, xLogico, yLogico);
         nodes.push({ id, x: xLogico, y: yLogico });
-        desenharGrafo();
+
+        desenharNovoNo(id, xLogico, yLogico);
         return;
     }
 
-    // LÓGICA EXISTENTE PARA 'origem-destino'
     if (modoAtual !== "origem-destino") return;
 
-    // CHAMA encontrarVerticeMaisProximo COM AS COORDENADAS JÁ NO ESPAÇO DO ZOOMGROUP
-    const maisProximo = encontrarVerticeMaisProximo(xCoordInZoomGroup, yCoordInZoomGroup); // ALTERADO AQUI
+    const [mouseX, mouseY] = d3.pointer(event);
+    const [xCoordInZoomGroup, yCoordInZoomGroup] = currentTransform.invert([mouseX, mouseY]);
+
+    const maisProximo = encontrarVerticeMaisProximo(xCoordInZoomGroup, yCoordInZoomGroup);
     if (!maisProximo) return;
 
     const { id, x: vx, y: vy } = maisProximo;
+
+    const circulo = zoomGroup.append("circle")
+        .attr("cx", vx)
+        .attr("cy", vy)
+        .attr("r", tamanhoVertice)
+        .attr("fill", origemClicada && !destinoClicada ? "orange" : "red")
+        .attr("class", "selected-node");
 
     if (!origemClicada) {
         origemClicada = id;
@@ -202,35 +189,32 @@ svg.on("click", (event) => {
         destinoClicada = id;
     }
 
-    const circulo = zoomGroup.append("circle")
-        .attr("cx", xScale(vx))
-        .attr("cy", yScale(vy))
-        .attr("r", tamanhoVertice)
-        .attr("fill", origemClicada && !destinoClicada ? "orange" : "red")
-        .attr("class", "selected-node");
-
     circulosSelecionados.push(circulo);
 });
 
-/**
- * REGISTRA OS MANIPULADORES DE EVENTO (CLIQUE E ARRASTAR) PARA NÓS E ARESTAS.
- */
-function registrarSeletores() {
-    zoomGroup.selectAll(".node")
+function desenharNovoNo(id, x, y) {
+    const strokeWidth = calcularTamanhoStroke(tamanhoVertice);
+
+    zoomGroup.append("circle")
+        .data([{ id, x, y }])
+        .attr("class", "node")
+        .attr("r", tamanhoVertice)
+        .attr("cx", x)
+        .attr("cy", y)
+        .attr("fill", "#4960dd")
+        .attr("stroke", null)
+        .attr("stroke-width", strokeWidth)
         .on("click", function (event, d) {
             if (modoAtual !== "selecionar") return;
             event.stopPropagation();
-
             resetarSelecaoVisual();
             d3.select(this)
                 .attr("fill", "#EB3A3B")
                 .classed("selecionado", true);
-
             itemSelecionado = d;
         })
         .on("mouseover", function(event, d) {
             if (modoAtual !== "selecionar" && modoAtual !== "origem-destino" && !isDrawingEdge) return;
-
             nodeTooltip
                 .style("display", "block")
                 .html(`ID: ${d.id}`)
@@ -248,45 +232,41 @@ function registrarSeletores() {
         .call(
             d3.drag()
                 .on("start", function (event, d) {
-                    nodeTooltip.style("display", "none"); // ESCONDE O TOOLTIP DO NÓ AO INICIAR O ARRASTO
-                    // ... CÓDIGO EXISTENTE PARA DRAG START ...
+                    nodeTooltip.style("display", "none");
                     if (modoAtual === "add-edge-undirected" || modoAtual === "add-edge-directed") {
                         isDrawingEdge = true;
                         startNode = d.id;
-
                         currentLine = zoomGroup.append("line")
-                            .attr("x1", xScale(d.x))
-                            .attr("y1", yScale(d.y))
-                            .attr("x2", xScale(d.x))
-                            .attr("y2", yScale(d.y))
+                            .attr("x1", d.x)
+                            .attr("y1", d.y)
+                            .attr("x2", d.x)
+                            .attr("y2", d.y)
                             .attr("stroke", "gray")
                             .attr("stroke-width", larguraAresta)
                             .attr("stroke-dasharray", "5,5");
-                    }
-                    else if (modoAtual === "selecionar") {
+                    } else if (modoAtual === "selecionar") {
                         d3.select(this).raise().attr("stroke", "black");
                     }
                 })
                 .on("drag", function (event, d) {
-                    nodeTooltip.style("display", "none"); // ESCONDE O TOOLTIP DO NÓ DURANTE O ARRASTO
+                    nodeTooltip.style("display", "none");
                     if (modoAtual === "selecionar") {
-                        const novosPontos = calcularNovasPosicoes(event, d);
-                        atualizarPosicaoNo(this, d, novosPontos);
-                        atualizarPosicaoArestas();
-                    }
-                    else if (isDrawingEdge && currentLine) {
-                        const [mouseX, mouseY] = d3.pointer(event, svg.node());
-                        const transform = d3.zoomTransform(zoomGroup.node());
-                        const [xCoordInZoomGroup, yCoordInZoomGroup] = transform.invert([mouseX, mouseY]);
+                        d.x = event.x;
+                        d.y = event.y;
+                        grafo.vertices.set(d.id, { x: d.x, y: d.y });
 
+                        d3.select(this)
+                            .attr("cx", d.x)
+                            .attr("cy", d.y);
+                        atualizarPosicaoArestas();
+                    } else if (isDrawingEdge && currentLine) {
                         currentLine
-                            .attr("x2", xCoordInZoomGroup)
-                            .attr("y2", yCoordInZoomGroup);
+                            .attr("x2", event.x)
+                            .attr("y2", event.y);
                     }
                 })
                 .on("end", function (event) {
-                    nodeTooltip.style("display", "none"); // ESCONDE O TOOLTIP DO NÓ AO FINALIZAR O ARRASTO
-                    // ... CÓDIGO EXISTENTE PARA DRAG END ...
+                    nodeTooltip.style("display", "none");
                     if (modoAtual === "selecionar") {
                         d3.select(this).attr("stroke", null);
                     }
@@ -298,9 +278,7 @@ function registrarSeletores() {
 
                         isDrawingEdge = false;
                         const [mouseX, mouseY] = d3.pointer(event, svg.node());
-                        const transform = d3.zoomTransform(svg.node());
-                        const xCoordInZoomGroup = (mouseX - transform.x) / transform.k;
-                        const yCoordInZoomGroup = (mouseY - transform.y) / transform.k;
+                        const [xCoordInZoomGroup, yCoordInZoomGroup] = currentTransform.invert([mouseX, mouseY]);
 
                         const endNode = encontrarVerticeMaisProximo(xCoordInZoomGroup, yCoordInZoomGroup);
 
@@ -314,20 +292,38 @@ function registrarSeletores() {
                             if (!existingLink) {
                                 grafo.adicionarAresta(startNode, endNode.id, bidirectional);
                                 links.push({ source: startNode, target: endNode.id, bidirectional: bidirectional });
-                                desenharGrafo();
+                                desenharNovaAresta(startNode, endNode.id, bidirectional);
                             }
                         }
                         startNode = null;
                     }
                 })
         );
+}
 
-    // NOVO: EVENTOS DE MOUSE PARA ARESTAS (LINK)
-    zoomGroup.selectAll(".link")
+function desenharNovaAresta(sourceId, targetId, bidirectional) {
+    const newLink = { source: sourceId, target: targetId, bidirectional: bidirectional };
+    const from = grafo.vertices.get(newLink.source);
+    const to = grafo.vertices.get(newLink.target);
+
+    const x1 = from.x;
+    const y1 = from.y;
+    const x2 = bidirectional ? to.x : calcularPontoFinalX(newLink, true);
+    const y2 = bidirectional ? to.y : calcularPontoFinalY(newLink, true);
+
+    zoomGroup.append("line")
+        .data([newLink])
+        .attr("class", newLink.bidirectional ? "link" : "link directional")
+        .attr("stroke-width", larguraAresta)
+        .attr("stroke", "#868baf")
+        .attr("marker-end", newLink.bidirectional ? null : "url(#arrowhead)")
+        .attr("x1", x1)
+        .attr("y1", y1)
+        .attr("x2", x2)
+        .attr("y2", y2)
         .on("click", function(event, d) {
             if (modoAtual !== "selecionar") return;
             event.stopPropagation();
-
             resetarSelecaoVisual();
             d3.select(this)
                 .attr("stroke", "#EB3A3B")
@@ -336,35 +332,27 @@ function registrarSeletores() {
         })
         .on("mouseover", function(event, d) {
             if (modoAtual !== "selecionar") return;
-
-            // ALTERADO: OBTÉM A DISTÂNCIA/PESO DINAMICAMENTE USANDO grafo.distanciaEntre
             const distance = grafo.distanciaEntre(d.source, d.target);
             nodeTooltip
                 .style("display", "block")
-                .html(`Distância: ${distance !== null && isFinite(distance) ? distance.toFixed(2) : 'N/A'}`) // MELHOR TRATAMENTO DE NULL/INFINITY
+                .html(`Distância: ${distance !== null && isFinite(distance) ? distance.toFixed(2) : 'N/A'}`)
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY + 10) + "px");
-        })
-        .on("mouseout", function() {
-            nodeTooltip.style("display", "none");
         })
         .on("mousemove", function(event) {
             nodeTooltip
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY + 10) + "px");
+        })
+        .on("mouseout", function() {
+            nodeTooltip.style("display", "none");
         });
 }
 
-
-// Funções auxiliares
-function calcularNovasPosicoes(event) {
-    const [mouseX, mouseY] = d3.pointer(event, svg.node());
-    const transform = d3.zoomTransform(zoomGroup.node());
-    const [xZoom, yZoom] = transform.invert([mouseX, mouseY]);
-
+function calcularNovasPosicoes(event, d) {
     return {
-        x: xScale.invert(xZoom),
-        y: yScale.invert(yZoom)
+        x: event.x,
+        y: event.y
     };
 }
 
@@ -376,13 +364,12 @@ function atualizarPosicaoNo(elemento, no, posicoes) {
     const strokeWidth = calcularTamanhoStroke(tamanhoVertice);
 
     d3.select(elemento)
-        .attr("cx", xScale(no.x))
-        .attr("cy", yScale(no.y))
+        .attr("cx", no.x)
+        .attr("cy", no.y)
         .attr("stroke-width", strokeWidth);
 }
 
 function calcularTamanhoStroke(tamanhoVertice) {
-    // O stroke será 20% do tamanho do vértice
     return tamanhoVertice * 0.2;
 }
 
@@ -393,42 +380,47 @@ function gerarIdSequencial() {
 function atualizarPosicaoArestas() {
     atualizarDistanciaSetas();
     zoomGroup.selectAll(".link")
-        .attr("x1", l => xScale(grafo.vertices.get(l.source).x))
-        .attr("y1", l => yScale(grafo.vertices.get(l.source).y))
-        .attr("x2", l => calcularPontoFinalX(l))
-        .attr("y2", l => calcularPontoFinalY(l));
+        .attr("x1", l => grafo.vertices.get(l.source).x)
+        .attr("y1", l => grafo.vertices.get(l.source).y)
+        .attr("x2", l => calcularPontoFinalX(l, true))
+        .attr("y2", l => calcularPontoFinalY(l, true));
 }
 
-function calcularPontoFinalX(aresta) {
-    const {dx,len} = calcularDiferencasEComprimento(aresta);
+function calcularPontoFinalX(aresta, useLogicalCoords = false) {
+    const {dx,len} = calcularDiferencasEComprimento(aresta, useLogicalCoords);
     const to = grafo.vertices.get(aresta.target);
-    // GARANTE QUE LEN NÃO É ZERO PARA EVITAR DIVISÃO POR ZERO
+    const xTo = to.x;
+
     return aresta.bidirectional
-        ? xScale(to.x)
-        : (len > 0 ? xScale(to.x) - (dx / len) * distanciaSeta : xScale(to.x));
+        ? xTo
+        : (len > 0 ? xTo - (dx / len) * distanciaSeta : xTo);
 }
 
-function calcularPontoFinalY(aresta) {
-    const {dy, len} = calcularDiferencasEComprimento(aresta);
+function calcularPontoFinalY(aresta, useLogicalCoords = false) {
+    const {dy, len} = calcularDiferencasEComprimento(aresta, useLogicalCoords);
     const to = grafo.vertices.get(aresta.target);
-    // GARANTE QUE LEN NÃO É ZERO PARA EVITAR DIVISÃO POR ZERO
+    const yTo = to.y;
+
     return aresta.bidirectional
-        ? yScale(to.y)
-        : (len > 0 ? yScale(to.y) - (dy / len) * distanciaSeta : yScale(to.y));
+        ? yTo
+        : (len > 0 ? yTo - (dy / len) * distanciaSeta : yTo);
 }
 
-function calcularDiferencasEComprimento(aresta) {
+function calcularDiferencasEComprimento(aresta, useLogicalCoords = false) {
     const from = grafo.vertices.get(aresta.source);
     const to = grafo.vertices.get(aresta.target);
-    const dx = xScale(to.x) - xScale(from.x);
-    const dy = yScale(to.y) - yScale(from.y);
+
+    const xFrom = from.x;
+    const yFrom = from.y;
+    const xTo = to.x;
+    const yTo = to.y;
+
+    const dx = xTo - xFrom;
+    const dy = yTo - yFrom;
     const len = Math.sqrt(dx * dx + dy * dy);
     return {dx, dy, len};
 }
 
-/**
- * FUNÇÃO PARA CANCELAR UM DESENHO DE ARESTA EM ANDAMENTO.
- */
 function cancelarDesenhoAresta() {
     if (currentLine) {
         currentLine.remove();
@@ -438,20 +430,15 @@ function cancelarDesenhoAresta() {
     startNode = null;
 }
 
-/**
- * MANIPULA A DELEÇÃO DE ELEMENTOS (NÓS OU ARESTAS) PELA TECLA DELETE.
- */
 document.addEventListener("keydown", (e) => {
     if (modoAtual !== "selecionar" || !itemSelecionado) return;
     if (e.key === "Delete") {
         if (itemSelecionado.id) {
-            // É UM VÉRTICE
             const id = itemSelecionado.id;
             grafo.removerVertice(id);
             nodes = nodes.filter(n => n.id !== id);
             links = links.filter(l => l.source !== id && l.target !== id);
         } else if (itemSelecionado.source && itemSelecionado.target) {
-            // É UMA ARESTA
             grafo.removerAresta(itemSelecionado.source, itemSelecionado.target);
             links = links.filter(l =>
                 !(l.source === itemSelecionado.source && l.target === itemSelecionado.target) &&
@@ -459,37 +446,16 @@ document.addEventListener("keydown", (e) => {
             );
         }
         itemSelecionado = null;
-        desenharGrafo();
+        desenharGrafoCompleto();
     }
 });
 
-/**
- * ENCONTRA O VÉRTICE MAIS PRÓXIMO DE UMA DADA COORDENADA (NO SISTEMA DO ZOOMGROUP).
- * @param {number} xCoordInZoomGroup - COORDENADA X NO SISTEMA DO ZOOMGROUP (PIXELS).
- * @param {number} yCoordInZoomGroup - COORDENADA Y NO SISTEMA DO ZOOMGROUP (PIXELS).
- * @returns {object|null} O OBJETO DO NÓ OU NULL SE NENHUM FOR ENCONTRADO.
- */
 function encontrarVerticeMaisProximo(xCoordInZoomGroup, yCoordInZoomGroup) {
-    const tolerance = 10; // UMA TOLERÂNCIA MAIOR PARA FACILITAR A SELEÇÃO
+    const tolerance = 10;
     return nodes.find(n => {
-        // CONVERTE AS COORDENADAS DO NÓ DO DOMÍNIO PARA PIXELS NO SISTEMA DO ZOOMGROUP
-        const px = xScale(n.x);
-        const py = yScale(n.y);
-        // VERIFICA SE O CLIQUE ESTÁ DENTRO DO RAIO DO VÉRTICE (AGORA COM TOLERÂNCIA)
-        return Math.hypot(px - xCoordInZoomGroup, py - yCoordInZoomGroup) <= (tamanhoVertice + tolerance);
+        return Math.hypot(n.x - xCoordInZoomGroup, n.y - yCoordInZoomGroup) <= (tamanhoVertice + tolerance);
     }) || null;
 }
-
-/**
- * CONFIGURA O COMPORTAMENTO DE ZOOM E PAN DO SVG.
- */
-svg.call(
-    d3.zoom()
-        .scaleExtent([0.2, 2000]) // DEFINE OS LIMITES DE ESCALA DO ZOOM
-        .on("zoom", (event) => {
-            zoomGroup.attr("transform", event.transform);
-        })
-);
 
 // --- CARREGAMENTO INICIAL DO GRAFO ---
 const grafoSalvo = localStorage.getItem("grafo-importado");
@@ -497,17 +463,32 @@ const grafoSalvo = localStorage.getItem("grafo-importado");
 if (grafoSalvo) {
     const data = JSON.parse(grafoSalvo);
     grafo = new Grafo();
-    grafo.carregarDoJSON(data);
-    nodes = data.nodes;
+
+    // Inverte a coordenada Y dos nós ao carregar
+    const nodesInvertidos = data.nodes.map(n => ({ id: n.id, x: n.x, y: n.y * -1 }));
+
+    // Garante que o grafo interno receba os nós com Y invertido
+    grafo.carregarDoJSON({ nodes: nodesInvertidos, edges: data.edges });
+    nodes = nodesInvertidos; // Atualiza o array global `nodes`
+
     links = data.edges.map(e => ({
         source: e.from,
         target: e.to,
         bidirectional: e.bidirectional !== false
     }));
-    desenharGrafo();
+    desenharGrafoCompleto();
+    centralizarGrafo();
 } else {
-    // SE NÃO HOUVER GRAFO SALVO, DESENHA UM GRAFO VAZIO PARA INICIAR AS ESCALAS
-    desenharGrafo();
+    desenharGrafoCompleto();
+    if (nodes.length > 0) {
+        centralizarGrafo();
+    } else {
+        const svgHeight = svg.node().getBoundingClientRect().height;
+        // Inverter Y na transformação inicial para um grafo vazio
+        const initialTransform = d3.zoomIdentity.scale(1, -1).translate(0, -svgHeight);
+        svg.call(zoom.transform, initialTransform);
+        currentTransform = initialTransform;
+    }
 }
 
 if (nodes.length > 0) {
@@ -521,12 +502,6 @@ if (nodes.length > 0) {
 
 // --- FUNÇÕES DE UTILIDADE E ATUALIZAÇÃO VISUAL ---
 
-/**
- * VERIFICA SE UMA ARESTA FAZ PARTE DE UM CAMINHO.
- * @param {object} d - OBJETO DA ARESTA.
- * @param {Array<string>} caminho - ARRAY DE IDS DOS NÓS NO CAMINHO.
- * @returns {boolean} TRUE SE A ARESTA FAZ PARTE DO CAMINHO, FALSE CASO CONTRÁRIO.
- */
 function fazParteDoCaminho(d, caminho) {
     for (let i = 0; i < caminho.length - 1; i++) {
         const a = caminho[i];
@@ -538,9 +513,6 @@ function fazParteDoCaminho(d, caminho) {
     return false;
 }
 
-/**
- * ATUALIZA O TAMANHO VISUAL DOS VÉRTICES.
- */
 function atualizarVertices() {
     const strokeWidth = calcularTamanhoStroke(tamanhoVertice);
     zoomGroup.selectAll(".node")
@@ -551,16 +523,10 @@ function atualizarVertices() {
         .attr("stroke-width", strokeWidth);
 }
 
-/**
- * ATUALIZA A LARGURA VISUAL DAS ARESTAS.
- */
 function atualizarArestas() {
     zoomGroup.selectAll(".link").attr("stroke-width", larguraAresta);
 }
 
-/**
- * ATUALIZA O TAMANHO VISUAL DAS SETAS (MARCADORES).
- */
 function atualizarSetas() {
     svg.select("#arrowhead")
         .attr("markerWidth", tamanhoSeta)
@@ -571,71 +537,14 @@ function atualizarSetas() {
         .attr("markerHeight", tamanhoSeta);
 }
 
-/**
- * ATUALIZA A DISTÂNCIA DA PONTA DA SETA AO NÓ DE DESTINO PARA ARESTAS DIRECIONAIS.
- */
 function atualizarDistanciaSetas() {
     zoomGroup.selectAll(".link.directional")
-        .attr("x2", d => {
-            const from = grafo.vertices.get(d.source);
-            const to = grafo.vertices.get(d.target);
-            const xTo = xScale(to.x);
-            const xFrom = xScale(from.x);
-            const dx = xTo - xFrom;
-            const dy = yScale(to.y) - yScale(from.y);
-            const len = Math.sqrt(dx * dx + dy * dy);
-            // GARANTE QUE LEN NÃO É ZERO PARA EVITAR DIVISÃO POR ZERO
-            return len > 0 ? xTo - (dx / len) * distanciaSeta : xTo;
-        })
-        .attr("y2", d => {
-            const from = grafo.vertices.get(d.source);
-            const to = grafo.vertices.get(d.target);
-            const yTo = yScale(to.y);
-            const yFrom = yScale(from.y);
-            const dx = xScale(to.x) - xScale(from.x);
-            const dy = yTo - yFrom;
-            const len = Math.sqrt(dx * dx + dy * dy);
-            // GARANTE QUE LEN NÃO É ZERO PARA EVITAR DIVISÃO POR ZERO
-            return len > 0 ? yTo - (dy / len) * distanciaSeta : yTo;
-        });
+        .attr("x2", d => calcularPontoFinalX(d, true))
+        .attr("y2", d => calcularPontoFinalY(d, true));
 }
 
-/**
- * DESENHA O GRAFO NO SVG, INCLUINDO NÓS E ARESTAS.
- * RECALCULA AS ESCALAS (XSCALE, YSCALE) BASEADAS NA EXTENSÃO DOS NÓS.
- */
-function desenharGrafo() {
-    zoomGroup.selectAll("*").remove(); // REMOVE TODOS OS ELEMENTOS EXISTENTES NO GRUPO DE ZOOM
-
-    const padding = 100;
-    // SE NÃO HOUVER NÓS, DEFINA UM DOMÍNIO PADRÃO PARA AS ESCALAS
-    const minX = nodes.length > 0 ? d3.min(nodes, d => d.x) : 0;
-    const maxX = nodes.length > 0 ? d3.max(nodes, d => d.x) : 1;
-    const minY = nodes.length > 0 ? d3.min(nodes, d => d.y) : 0;
-    const maxY = nodes.length > 0 ? d3.max(nodes, d => d.y) : 1;
-
-    // USA EXTENSÕES SEGURAS PARA EVITAR PROBLEMAS COM GRAFOS VAZIOS OU COM UM ÚNICO NÓ
-    const xExtent = [minX, maxX];
-    const yExtent = [minY, maxY];
-
-    // OBTÉM AS DIMENSÕES REAIS DO SVG, MAIS ROBUSTO QUE VALORES FIXOS
-    const width = svg.node().getBoundingClientRect().width;
-
-    // PARA EVITAR PROBLEMAS DE DIVISÃO POR ZERO SE MIN/MAX SÃO IGUAIS (e.g., um único nó)
-    const domainWidth = xExtent[1] - xExtent[0] || 1; // Garante que não é 0
-    const domainHeight = yExtent[1] - yExtent[0] || 1; // Garante que não é 0
-
-    const aspect = domainHeight / domainWidth;
-    const calculatedHeight = isFinite(aspect) ? width * aspect : width;
-
-
-    xScale = d3.scaleLinear()
-        .domain([xExtent[0] - padding, xExtent[1] + padding])
-        .range([0, width]);
-
-    yScale = d3.scaleLinear()
-        .domain([yExtent[0] - padding, yExtent[1] + padding])
-        .range([calculatedHeight, 0]); // AQUI INVERTE O Y (0 NO TOPO, HEIGHT NA BASE)
+function desenharGrafoCompleto() {
+    zoomGroup.selectAll("*").remove();
 
     zoomGroup.selectAll(".link")
         .data(links)
@@ -647,42 +556,10 @@ function desenharGrafo() {
         .attr("marker-end", d => {
             return d.bidirectional ? null : "url(#arrowhead)";
         })
-        .attr("x1", d => {
-            const from = grafo.vertices.get(d.source);
-            return xScale(from.x);
-        })
-        .attr("y1", d => {
-            const from = grafo.vertices.get(d.source);
-            return yScale(from.y);
-        })
-        .attr("x2", d => {
-            const from = grafo.vertices.get(d.source);
-            const to = grafo.vertices.get(d.target);
-            const xTo = xScale(to.x);
-            const xFrom = xScale(from.x);
-
-            if (d.bidirectional) return xTo;
-
-            const dx = xTo - xFrom;
-            const dy = yScale(to.y) - yScale(from.y);
-            const len = Math.sqrt(dx * dx + dy * dy);
-
-            return len > 0 ? xTo - (dx / len) * distanciaSeta : xTo;
-        })
-        .attr("y2", d => {
-            const from = grafo.vertices.get(d.source);
-            const to = grafo.vertices.get(d.target);
-            const yTo = yScale(to.y);
-            const yFrom = yScale(from.y);
-
-            if (d.bidirectional) return yTo;
-
-            const dx = xScale(to.x) - xScale(from.x);
-            const dy = yTo - yFrom;
-            const len = Math.sqrt(dx * dx + dy * dy);
-
-            return len > 0 ? yTo - (dy / len) * distanciaSeta : yTo;
-        });
+        .attr("x1", d => grafo.vertices.get(d.source).x)
+        .attr("y1", d => grafo.vertices.get(d.source).y)
+        .attr("x2", d => calcularPontoFinalX(d, true))
+        .attr("y2", d => calcularPontoFinalY(d, true));
 
     zoomGroup.selectAll(".node")
         .data(nodes)
@@ -690,25 +567,147 @@ function desenharGrafo() {
         .append("circle")
         .attr("class", "node")
         .attr("r", tamanhoVertice)
-        .attr("cx", d => xScale(d.x))
-        .attr("cy", d => yScale(d.y))
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y)
         .attr("fill", "#4960dd");
 
-    // ATUALIZA OS TAMANHOS DE MARCADOR PARA AS SETAS EXISTENTES
     atualizarSetas();
-
-    // ATUALIZA AS PROPRIEDADES VISUAIS BASEADAS NOS VALORES ATUAIS DOS SLIDERS
     atualizarVertices();
     atualizarArestas();
     atualizarDistanciaSetas();
-    registrarSeletores();
+    registrarSeletoresNosEArestas();
+}
+
+function registrarSeletoresNosEArestas() {
+    zoomGroup.selectAll(".node")
+        .on("click", function (event, d) {
+            if (modoAtual !== "selecionar") return;
+            event.stopPropagation();
+            resetarSelecaoVisual();
+            d3.select(this)
+                .attr("fill", "#EB3A3B")
+                .classed("selecionado", true);
+            itemSelecionado = d;
+        })
+        .on("mouseover", function(event, d) {
+            if (modoAtual !== "selecionar" && modoAtual !== "origem-destino" && !isDrawingEdge) return;
+            nodeTooltip
+                .style("display", "block")
+                .html(`ID: ${d.id}`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY + 10) + "px");
+        })
+        .on("mouseout", function() {
+            nodeTooltip.style("display", "none");
+        })
+        .on("mousemove", function(event) {
+            nodeTooltip
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY + 10) + "px");
+        })
+        .call(
+            d3.drag()
+                .on("start", function (event, d) {
+                    nodeTooltip.style("display", "none");
+                    if (modoAtual === "add-edge-undirected" || modoAtual === "add-edge-directed") {
+                        isDrawingEdge = true;
+                        startNode = d.id;
+                        currentLine = zoomGroup.append("line")
+                            .attr("x1", d.x)
+                            .attr("y1", d.y)
+                            .attr("x2", d.x)
+                            .attr("y2", d.y)
+                            .attr("stroke", "gray")
+                            .attr("stroke-width", larguraAresta)
+                            .attr("stroke-dasharray", "5,5");
+                    }
+                    else if (modoAtual === "selecionar") {
+                        d3.select(this).raise().attr("stroke", "black");
+                    }
+                })
+                .on("drag", function (event, d) {
+                    nodeTooltip.style("display", "none");
+                    if (modoAtual === "selecionar") {
+                        d.x = event.x;
+                        d.y = event.y;
+                        grafo.vertices.set(d.id, { x: d.x, y: d.y });
+
+                        d3.select(this)
+                            .attr("cx", d.x)
+                            .attr("cy", d.y);
+                        atualizarPosicaoArestas();
+                    }
+                    else if (isDrawingEdge && currentLine) {
+                        currentLine
+                            .attr("x2", event.x)
+                            .attr("y2", event.y);
+                    }
+                })
+                .on("end", function (event) {
+                    nodeTooltip.style("display", "none");
+                    if (modoAtual === "selecionar") {
+                        d3.select(this).attr("stroke", null);
+                    }
+                    else if (isDrawingEdge) {
+                        if (currentLine) {
+                            currentLine.remove();
+                            currentLine = null;
+                        }
+                        isDrawingEdge = false;
+                        const [mouseX, mouseY] = d3.pointer(event, svg.node());
+                        const [xCoordInZoomGroup, yCoordInZoomGroup] = currentTransform.invert([mouseX, mouseY]);
+
+                        const endNode = encontrarVerticeMaisProximo(xCoordInZoomGroup, yCoordInZoomGroup);
+
+                        if (startNode && endNode && startNode !== endNode.id) {
+                            const bidirectional = (edgeType === 'undirected');
+                            const existingLink = links.find(
+                                l => (l.source === startNode && l.target === endNode.id && l.bidirectional === bidirectional) ||
+                                    (l.source === endNode.id && l.target === startNode && l.bidirectional === bidirectional && bidirectional)
+                            );
+
+                            if (!existingLink) {
+                                grafo.adicionarAresta(startNode, endNode.id, bidirectional);
+                                links.push({ source: startNode, target: endNode.id, bidirectional: bidirectional });
+                                desenharNovaAresta(startNode, endNode.id, bidirectional);
+                            }
+                        }
+                        startNode = null;
+                    }
+                })
+        );
+
+    zoomGroup.selectAll(".link")
+        .on("click", function(event, d) {
+            if (modoAtual !== "selecionar") return;
+            event.stopPropagation();
+            resetarSelecaoVisual();
+            d3.select(this)
+                .attr("stroke", "#EB3A3B")
+                .classed("selecionado", true);
+            itemSelecionado = d;
+        })
+        .on("mouseover", function(event, d) {
+            if (modoAtual !== "selecionar") return;
+            const distance = grafo.distanciaEntre(d.source, d.target);
+            nodeTooltip
+                .style("display", "block")
+                .html(`Distância: ${distance !== null && isFinite(distance) ? distance.toFixed(2) : 'N/A'}`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY + 10) + "px");
+        })
+        .on("mousemove", function(event) {
+            nodeTooltip
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY + 10) + "px");
+        })
+        .on("mouseout", function() {
+            nodeTooltip.style("display", "none");
+        });
 }
 
 // --- FUNÇÕES DE LÓGICA DO GRAFO (DIJKSTRA) ---
 
-/**
- * EXECUTA O ALGORITMO DE DIJKSTRA E ATUALIZA A UI COM OS RESULTADOS.
- */
 window.executarDijkstra = function () {
     if (origemClicada === null || destinoClicada === null) {
         document.getElementById("status").textContent = "STATUS = SELECIONE DOIS VÉRTICES ⚠️";
@@ -769,10 +768,7 @@ window.executarDijkstra = function () {
     }
 };
 
-/**
- * REINICIA A SELEÇÃO DE ORIGEM/DESTINO E LIMPA A VISUALIZAÇÃO DO CAMINHO.
- */
-window.resetarSelecao = function () { // MANTENHA COMO `window.resetarSelecao`
+window.resetarSelecao = function () {
     tabela.innerHTML = "";
     origemClicada = null;
     destinoClicada = null;
@@ -792,11 +788,47 @@ window.resetarSelecao = function () { // MANTENHA COMO `window.resetarSelecao`
     document.getElementById("custo").textContent = "Custo = 0";
 };
 
+function centralizarGrafo() {
+    const svgRect = svg.node().getBoundingClientRect();
+    const svgWidth = svgRect.width;
+    const svgHeight = svgRect.height;
+
+    if (nodes.length === 0) {
+        const initialTransform = d3.zoomIdentity.scale(1, -1).translate(0, -svgHeight);
+        svg.transition().duration(750).call(zoom.transform, initialTransform);
+        currentTransform = initialTransform;
+        return;
+    }
+
+    const minX = d3.min(nodes, d => d.x);
+    const maxX = d3.max(nodes, d => d.x);
+    const minY = d3.min(nodes, d => d.y);
+    const maxY = d3.max(nodes, d => d.y);
+
+    const graphWidth = maxX - minX;
+    const graphHeight = maxY - minY;
+
+    const padding = 0.1;
+
+    const scaleX = svgWidth / (graphWidth * (1 + padding));
+    const scaleY = svgHeight / (graphHeight * (1 + padding));
+    const finalScale = Math.min(scaleX, scaleY);
+    const effectiveScale = isFinite(finalScale) && finalScale > 0 ? finalScale : 1;
+
+    const graphCenterX = minX + graphWidth / 2;
+    const graphCenterY = minY + graphHeight / 2;
+
+    const newTransform = d3.zoomIdentity
+        .translate(svgWidth / 2, svgHeight / 2)
+        .scale(effectiveScale, -effectiveScale)
+        .translate(-graphCenterX, -graphCenterY);
+
+    svg.transition()
+        .duration(750)
+        .call(zoom.transform, newTransform);
+
+    currentTransform = newTransform;
+}
+
 // --- INICIALIZAÇÃO DA APLICAÇÃO ---
 configurarToolbar();
-
-// ASSEGURA QUE O GRAFO É DESENHADO NO INÍCIO PARA INICIALIZAR AS ESCALAS
-// MESMO QUE NÃO HAJA DADOS SALVOS.
-if (!grafoSalvo) {
-    desenharGrafo();
-}
