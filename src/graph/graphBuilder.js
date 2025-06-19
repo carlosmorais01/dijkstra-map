@@ -314,14 +314,14 @@ function atualizarEnumeracaoVertices() {
                 .attr("dominant-baseline", "middle")
                 .attr("pointer-events", "none")
                 .attr("fill", "#f3efe7")
-                .attr("font-size", Math.max(0.001, tamanhoVertice) + "px")
+                .attr("font-size", d => Math.max(0.001, tamanhoVertice) + "px")
                 .attr("x", d => d.x)
                 .attr("y", d => d.y + 0.25)
                 .text(d => d.id),
             update => update
                 .attr("x", d => d.x)
                 .attr("y", d => d.y + 0.25)
-                .attr("font-size", Math.max(0.001, tamanhoVertice) + "px")
+                .attr("font-size", d => Math.max(0.001, tamanhoVertice) + "px")
                 .text(d => d.id),
             exit => exit.remove()
         );
@@ -355,6 +355,7 @@ function atualizarPesosArestas() {
                 const offset = 5;
                 const angle = Math.atan2(to.y - from.y, to.x - from.x);
                 midX += Math.sin(angle) * offset;
+                midY -= Math.cos(angle) * offset;
                 return midX;
             })
             .attr("y", d => {
@@ -365,10 +366,11 @@ function atualizarPesosArestas() {
 
                 const offset = 5;
                 const angle = Math.atan2(to.y - from.y, to.x - from.x);
+                midX += Math.sin(angle) * offset;
                 midY -= Math.cos(angle) * offset;
                 return midY;
             })
-            .attr("font-size", Math.max(2, larguraAresta * 5) + "px")
+            .attr("font-size", d => Math.max(2, larguraAresta * 5) + "px")
             .attr("fill", "#393939")
             .attr("pointer-events", "none")
             .text(d => {
@@ -413,6 +415,7 @@ svg.on("click", (event) => {
         nodes.push({ id, x: xLogico, y: yLogico });
 
         desenharNovoNo(id, xLogico, yLogico);
+        return;
     }
 });
 
@@ -466,7 +469,7 @@ function configurarEventosNo(selection) {
         })
         .call(
             d3.drag()
-                .filter(modoAtual === "selecionar" || modoAtual.startsWith("add-edge-"))
+                .filter(event => modoAtual === "selecionar" || modoAtual.startsWith("add-edge-"))
                 .on("start", function (event, d) {
                     nodeTooltip.style("display", "none");
                     d._dragStart = { x: event.x, y: event.y };
@@ -519,6 +522,7 @@ function configurarEventosNo(selection) {
 
                     const dx = event.x - d._dragStart.x;
                     const dy = event.y - d._dragStart.y;
+                    const moved = Math.sqrt(dx * dx + dy * dy) > 2;
 
                     if (modoAtual === "selecionar") {
                         d3.select(this).attr("stroke", null);
@@ -666,6 +670,7 @@ function atualizarPosicaoArestas() {
                 const from = grafo.vertices.get(d.source);
                 const to = grafo.vertices.get(d.target);
                 const midX = (from.x + to.x) / 2;
+                const midY = (from.y + to.y) / 2;
                 const offset = 5;
                 const angle = Math.atan2(to.y - from.y, to.x - from.x);
                 return midX + Math.sin(angle) * offset;
@@ -673,6 +678,7 @@ function atualizarPosicaoArestas() {
             .attr("y", d => {
                 const from = grafo.vertices.get(d.source);
                 const to = grafo.vertices.get(d.target);
+                const midX = (from.x + to.x) / 2;
                 const midY = (from.y + to.y) / 2;
                 const offset = 5;
                 const angle = Math.atan2(to.y - from.y, to.x - from.x);
