@@ -17,9 +17,9 @@ table, th, td {
 }
 
 td, th {
-    text-align: center;      /* Alinha o conteúdo horizontalmente */
-    vertical-align: middle;  /* Alinha o conteúdo verticalmente */
-    padding: 5px;           /* Adiciona espaçamento interno */
+    text-align: center;
+    vertical-align: middle;
+    padding: 5px;
     width: 100px;
 }
 
@@ -173,7 +173,7 @@ destaque {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* empurra conteúdo pra cima e os botões para baixo */
+    justify-content: space-between;
     background-color: #F9F8F5;
     border-radius: 10px;
 }
@@ -256,71 +256,67 @@ destaque {
 }
 
 .tool-button-group {
-    position: relative; /* PARA POSICIONAR O DROPDOWN RELATIVO A ESTE GRUPO */
+    position: relative;
 }
 
 #tool-edge-main {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%; /* OCUPA A LARGURA TOTAL DO GRUPO */
+    width: 100%;
 }
 
 .dropdown-arrow {
-    margin-left: 5px; /* ESPAÇAMENTO PARA A SETINHA */
+    margin-left: 5px;
     font-size: 0.8em;
 }
 
 .edge-dropdown-content {
-    display: none; /* INICIALMENTE OCULTO */
+    display: none;
     position: absolute;
-    /* POSICIONA ACIMA DO BOTÃO PRINCIPAL. AJUSTE 'BOTTOM' CONFORME NECESSÁRIO */
-    bottom: calc(100% + 5px); /* 100% DA ALTURA DO PAI + 5PX DE ESPAÇO */
+    bottom: calc(100% + 5px);
     left: 0;
     background-color: #f9f9f9;
-    min-width: 60px; /* LARGURA MÍNIMA DO DROPDOWN */
+    min-width: 60px;
     box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
-    z-index: 1; /* GARANTE QUE FIQUE ACIMA DE OUTROS ELEMENTOS */
+    z-index: 1;
     border-radius: 5px;
     padding: 5px;
-    flex-direction: column; /* EMPILHA AS OPÇÕES */
-    gap: 5px; /* ESPAÇAMENTO ENTRE AS OPÇÕES */
+    flex-direction: column;
+    gap: 5px;
 }
 
 .edge-dropdown-content.show {
-    display: flex; /* MOSTRA O DROPDOWN QUANDO A CLASSE 'SHOW' É ADICIONADA */
+    display: flex;
 }
 
 .edge-dropdown-content .tool-button {
-    /* ESTILOS PARA OS BOTÕES DENTRO DO DROPDOWN, SE DIFERENTES */
-    width: 100%; /* OCUPA A LARGURA DO DROPDOWN */
+    width: 100%;
     justify-content: center;
 }
 
 .tooltip {
     position: absolute;
-    background-color: rgba(0, 0, 0, 0.75); /* FUNDO ESCURO SEMITRANSPARENTE */
+    background-color: rgba(0, 0, 0, 0.75);
     color: #fff; /* TEXTO BRANCO */
     padding: 8px 12px;
     border-radius: 4px;
     font-size: 14px;
-    pointer-events: none; /* MUITO IMPORTANTE: IMPEDE QUE O TOOLTIP INTERFIRA COM EVENTOS DO MOUSE */
-    display: none; /* INICIALMENTE OCULTO */
-    white-space: nowrap; /* IMPEDE QUE O TEXTO QUEBRE LINHAS */
-    z-index: 1000; /* GARANTE QUE FIQUE ACIMA DE QUASE TUDO */
-    transform: translate(10px, 10px); /* PEQUENO OFFSET DO CURSOR */
+    pointer-events: none;
+    display: none;
+    white-space: nowrap;
+    z-index: 1000;
+    transform: translate(10px, 10px);
 }
 
-/* Estilos para o cabeçalho do menu (logo + menu dropdown) */
 .app-header {
     display: flex;
     align-items: center;
-    padding: 20px 40px; /* Ajuste o padding conforme necessário */
-    position: relative; /* Para posicionar o menu dropdown */
-    gap: 15px; /* Espaçamento entre logo e toggle do menu */
+    padding: 20px 40px;
+    position: relative;
+    gap: 15px;
 }
 
-/* Estilos para o botão que abre o menu principal */
 .main-dropdown-menu {
     position: relative;
 }
@@ -334,14 +330,13 @@ destaque {
 }
 
 .main-menu-toggle:hover {
-    background-color: #e0e0e0; /* Um leve destaque ao passar o mouse */
+    background-color: #e0e0e0;
 }
 
-/* Estilos para o conteúdo principal do dropdown (Arquivo, Visualizar) */
 .dropdown-content.main-menu-content {
     display: none;
     position: absolute;
-    top: calc(100% + 5px); /* Abaixo do toggle */
+    top: calc(100% + 5px);
     left: 0;
     background-color: #f9f9f9;
     box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
@@ -352,10 +347,9 @@ destaque {
 }
 
 .dropdown-content.main-menu-content.show {
-    display: block; /* Exibe o menu principal */
+    display: block;
 }
 
-/* Estilos para os itens de menu (Arquivo, Visualizar) */
 .dropdown-item {
     padding: 8px 15px;
     cursor: pointer;
@@ -364,8 +358,8 @@ destaque {
     align-items: center;
     color: #333;
     font-size: 15px;
-    white-space: nowrap; /* Impede que o texto quebre */
-    position: relative; /* Para posicionar o submenu */
+    white-space: nowrap;
+    position: relative;
 }
 
 .dropdown-item:hover {
@@ -377,30 +371,26 @@ destaque {
     font-size: 0.7em;
 }
 
-/* Estilos para o conteúdo do submenu (Criar novo, Importar, etc.) */
 .submenu-content {
     display: none;
     position: absolute;
     top: 0;
-    /* Ajustado para abrir à direita do item pai */
-    left: 100%; /* Inicia no final do item pai */
-    margin-left: 5px; /* Espaçamento entre o pai e o submenu */
+    left: 100%;
+    margin-left: 5px;
     background-color: #f9f9f9;
     box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
-    z-index: 1002; /* Acima do menu principal */
-    min-width: 200px; /* Largura mínima do submenu */
+    z-index: 12;
+    min-width: 200px;
     border-radius: 5px;
     padding: 5px 0;
 }
 
-/* Exibe o submenu ao passar o mouse sobre o item pai */
 .dropdown-item.has-submenu:hover > .submenu-content {
     display: block;
 }
 
-/* Estilos para as opções dentro dos submenus (botões e checkboxes) */
 .menu-option {
-    display: block; /* Para que cada opção ocupe uma linha */
+    display: block;
     width: 100%;
     padding: 8px 15px;
     background: none;
@@ -417,7 +407,6 @@ destaque {
     background-color: #e0e0e0;
 }
 
-/* Estilos para opções de checkbox */
 .checkbox-option {
     display: flex;
     align-items: center;
@@ -429,7 +418,6 @@ destaque {
 }
 
 .checkbox-option input[type="checkbox"] {
-    /* Esconder o checkbox nativo */
     opacity: 0;
     width: 0;
     height: 0;
@@ -443,11 +431,11 @@ destaque {
     border: 1px solid #ccc;
     border-radius: 3px;
     display: inline-block;
-    position: relative; /* Para o tick */
+    position: relative;
 }
 
 .checkbox-option input:checked + .checkmark {
-    background-color: #2196F3; /* Cor azul quando checado */
+    background-color: #2196F3;
     border-color: #2196F3;
 }
 
@@ -475,4 +463,32 @@ destaque {
     position: absolute;
     bottom: 10px;
     right: 10px;
+}
+
+.main-dropdown-menu {
+    position: relative;
+}
+
+.dropdown-content.main-menu-content {
+    display: none;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    background-color: #f9f9f9;
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+    z-index: 15;
+    min-width: 150px;
+    border-radius: 5px;
+    padding: 5px 0;
+}
+
+.app-header {
+    position: relative;
+}
+
+.dropdown-content.main-menu-content.show {
+    display: block;
+}
+.dropdown-item.has-submenu:hover > .submenu-content {
+    display: block;
 }
