@@ -255,6 +255,12 @@ function desenharNovoNo(id, x, y) {
                         d.y = event.y;
                         grafo.vertices.set(d.id, { x: d.x, y: d.y });
 
+                        const index = nodes.findIndex(n => n.id === d.id);
+                        if (index !== -1) {
+                            nodes[index].x = d.x;
+                            nodes[index].y = d.y;
+                        }
+
                         d3.select(this)
                             .attr("cx", d.x)
                             .attr("cy", d.y);
@@ -643,6 +649,12 @@ function registrarSeletoresNosEArestas() {
                         d.y = event.y;
                         grafo.vertices.set(d.id, {x: d.x, y: d.y});
 
+                        const index = nodes.findIndex(n => n.id === d.id);
+                        if (index !== -1) {
+                            nodes[index].x = d.x;
+                            nodes[index].y = d.y;
+                        }
+
                         d3.select(this)
                             .attr("cx", d.x)
                             .attr("cy", d.y);
@@ -704,11 +716,11 @@ function registrarSeletoresNosEArestas() {
 
 window.executarDijkstra = function () {
     if (origemClicada === null || destinoClicada === null) {
-        document.getElementById("status").textContent = "STATUS = SELECIONE DOIS VÉRTICES ⚠️";
+        document.getElementById("status").textContent = "Status = Selecione Dois Vértices ⚠️";
         return;
     }
 
-    document.getElementById("status").textContent = "STATUS = CALCULANDO...";
+    document.getElementById("status").textContent = "Status = Calculando...";
 
     const inicio = performance.now();
     const resultado = grafo.dijkstra(origemClicada, destinoClicada);
