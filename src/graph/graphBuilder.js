@@ -728,7 +728,7 @@ window.executarDijkstra = function () {
 
     const tempoDecorrido = ((fim - inicio) / 1000).toFixed(3);
 
-    document.getElementById("velocidade").textContent = `Velocidade = ${tempoDecorrido}S`;
+    document.getElementById("velocidade").textContent = `Velocidade = ${tempoDecorrido}s`;
     document.getElementById("explorados").textContent = `Nós explorados = ${resultado.visitados}`;
     document.getElementById("custo").textContent = `Custo = ${resultado.custo.toFixed(2)}`;
 
@@ -788,7 +788,7 @@ window.resetarSelecao = function () {
     zoomGroup.selectAll(".node")
         .classed("path", false);
 
-    document.getElementById("velocidade").textContent = "Velocidade = 0S";
+    document.getElementById("velocidade").textContent = "Velocidade = 0s";
     document.getElementById("status").textContent = "Status = Aguardando";
     document.getElementById("explorados").textContent = "Nós explorados = 0";
     document.getElementById("custo").textContent = "Custo = 0";
