@@ -11,7 +11,7 @@ let grafo = new Grafo();
 let nodes = [], links = [];
 let contadorId = 1;
 
-const zoomGroup = svg.append("g"); // Removido .attr("transform", "scale(1, -1)")
+const zoomGroup = svg.append("g");
 
 const nodeTooltip = d3.select("#node-tooltip");
 
@@ -51,7 +51,7 @@ document.getElementById("slider-arrow-gap").addEventListener("input", e => {
 svg.append("defs").append("marker")
     .attr("id", "arrowhead-green")
     .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 10) // Ajustado
+    .attr("refX", 0)
     .attr("refY", 0)
     .attr("markerWidth", 4)
     .attr("markerHeight", 4)
@@ -63,7 +63,7 @@ svg.append("defs").append("marker")
 svg.append("defs").append("marker")
     .attr("id", "arrowhead")
     .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 10) // Ajustado
+    .attr("refX", 0)
     .attr("refY", 0)
     .attr("markerWidth", 4)
     .attr("markerHeight", 4)
@@ -145,7 +145,7 @@ function resetarSelecaoVisual() {
 let currentTransform = d3.zoomIdentity;
 
 const zoom = d3.zoom()
-    .scaleExtent([0.2, 2000])
+    .scaleExtent([0.02, 1000])
     .on("zoom", (event) => {
         currentTransform = event.transform;
         zoomGroup.attr("transform", currentTransform);
@@ -347,6 +347,10 @@ function desenharNovaAresta(sourceId, targetId, bidirectional) {
         .on("mouseout", function() {
             nodeTooltip.style("display", "none");
         });
+
+    zoomGroup.selectAll(".node").each(function() { // Itera sobre cada nó
+        d3.select(this).raise(); // Move cada nó para a frente (topo da ordem de renderização)
+    });
 }
 
 function calcularNovasPosicoes(event, d) {
@@ -451,7 +455,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 function encontrarVerticeMaisProximo(xCoordInZoomGroup, yCoordInZoomGroup) {
-    const tolerance = 10;
+    const tolerance = 1;
     return nodes.find(n => {
         return Math.hypot(n.x - xCoordInZoomGroup, n.y - yCoordInZoomGroup) <= (tamanhoVertice + tolerance);
     }) || null;
@@ -464,12 +468,19 @@ if (grafoSalvo) {
     const data = JSON.parse(grafoSalvo);
     grafo = new Grafo();
 
-    // Inverte a coordenada Y dos nós ao carregar
-    const nodesInvertidos = data.nodes.map(n => ({ id: n.id, x: n.x, y: n.y * -1 }));
+    const minX = Math.min(...data.nodes.map(n => n.x));
+    const minY = Math.min(...data.nodes.map(n => n.y));
+
+    nodes = data.nodes.map(n => ({
+        id: n.id,
+        x: n.x - minX,
+        y: (n.y - minY) * -1
+    }));
+
 
     // Garante que o grafo interno receba os nós com Y invertido
-    grafo.carregarDoJSON({ nodes: nodesInvertidos, edges: data.edges });
-    nodes = nodesInvertidos; // Atualiza o array global `nodes`
+    grafo.carregarDoJSON({ nodes: nodes, edges: data.edges });
+
 
     links = data.edges.map(e => ({
         source: e.from,
@@ -589,7 +600,7 @@ function registrarSeletoresNosEArestas() {
                 .classed("selecionado", true);
             itemSelecionado = d;
         })
-        .on("mouseover", function(event, d) {
+        .on("mouseover", function (event, d) {
             if (modoAtual !== "selecionar" && modoAtual !== "origem-destino" && !isDrawingEdge) return;
             nodeTooltip
                 .style("display", "block")
@@ -597,10 +608,10 @@ function registrarSeletoresNosEArestas() {
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY + 10) + "px");
         })
-        .on("mouseout", function() {
+        .on("mouseout", function () {
             nodeTooltip.style("display", "none");
         })
-        .on("mousemove", function(event) {
+        .on("mousemove", function (event) {
             nodeTooltip
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY + 10) + "px");
@@ -609,6 +620,8 @@ function registrarSeletoresNosEArestas() {
             d3.drag()
                 .on("start", function (event, d) {
                     nodeTooltip.style("display", "none");
+                    d._dragStart = {x: event.x, y: event.y};
+
                     if (modoAtual === "add-edge-undirected" || modoAtual === "add-edge-directed") {
                         isDrawingEdge = true;
                         startNode = d.id;
@@ -620,39 +633,49 @@ function registrarSeletoresNosEArestas() {
                             .attr("stroke", "gray")
                             .attr("stroke-width", larguraAresta)
                             .attr("stroke-dasharray", "5,5");
-                    }
-                    else if (modoAtual === "selecionar") {
+                    } else if (modoAtual === "selecionar") {
                         d3.select(this).raise().attr("stroke", "black");
                     }
                 })
                 .on("drag", function (event, d) {
-                    nodeTooltip.style("display", "none");
                     if (modoAtual === "selecionar") {
                         d.x = event.x;
                         d.y = event.y;
-                        grafo.vertices.set(d.id, { x: d.x, y: d.y });
+                        grafo.vertices.set(d.id, {x: d.x, y: d.y});
 
                         d3.select(this)
                             .attr("cx", d.x)
                             .attr("cy", d.y);
                         atualizarPosicaoArestas();
-                    }
-                    else if (isDrawingEdge && currentLine) {
+                    } else if (isDrawingEdge && currentLine) {
                         currentLine
                             .attr("x2", event.x)
                             .attr("y2", event.y);
                     }
                 })
-                .on("end", function (event) {
+                .on("end", function (event, d) {
                     nodeTooltip.style("display", "none");
+
+                    const dx = event.x - d._dragStart.x;
+                    const dy = event.y - d._dragStart.y;
+                    const moved = Math.sqrt(dx * dx + dy * dy) > 2; // tolerância de 2px
+
                     if (modoAtual === "selecionar") {
+                        if (!moved) {
+                            // foi clique, não drag
+                            resetarSelecaoVisual();
+                            d3.select(this)
+                                .attr("fill", "#EB3A3B")
+                                .classed("selecionado", true);
+                            itemSelecionado = d;
+                        }
                         d3.select(this).attr("stroke", null);
-                    }
-                    else if (isDrawingEdge) {
+                    } else if (isDrawingEdge) {
                         if (currentLine) {
                             currentLine.remove();
                             currentLine = null;
                         }
+
                         isDrawingEdge = false;
                         const [mouseX, mouseY] = d3.pointer(event, svg.node());
                         const [xCoordInZoomGroup, yCoordInZoomGroup] = currentTransform.invert([mouseX, mouseY]);
@@ -668,44 +691,15 @@ function registrarSeletoresNosEArestas() {
 
                             if (!existingLink) {
                                 grafo.adicionarAresta(startNode, endNode.id, bidirectional);
-                                links.push({ source: startNode, target: endNode.id, bidirectional: bidirectional });
+                                links.push({source: startNode, target: endNode.id, bidirectional: bidirectional});
                                 desenharNovaAresta(startNode, endNode.id, bidirectional);
                             }
                         }
                         startNode = null;
                     }
                 })
-        );
-
-    zoomGroup.selectAll(".link")
-        .on("click", function(event, d) {
-            if (modoAtual !== "selecionar") return;
-            event.stopPropagation();
-            resetarSelecaoVisual();
-            d3.select(this)
-                .attr("stroke", "#EB3A3B")
-                .classed("selecionado", true);
-            itemSelecionado = d;
-        })
-        .on("mouseover", function(event, d) {
-            if (modoAtual !== "selecionar") return;
-            const distance = grafo.distanciaEntre(d.source, d.target);
-            nodeTooltip
-                .style("display", "block")
-                .html(`Distância: ${distance !== null && isFinite(distance) ? distance.toFixed(2) : 'N/A'}`)
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY + 10) + "px");
-        })
-        .on("mousemove", function(event) {
-            nodeTooltip
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY + 10) + "px");
-        })
-        .on("mouseout", function() {
-            nodeTooltip.style("display", "none");
-        });
+        )
 }
-
 // --- FUNÇÕES DE LÓGICA DO GRAFO (DIJKSTRA) ---
 
 window.executarDijkstra = function () {
