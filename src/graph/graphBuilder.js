@@ -359,26 +359,6 @@ function desenharNovaAresta(sourceId, targetId, bidirectional) {
     });
 }
 
-function calcularNovasPosicoes(event, d) {
-    return {
-        x: event.x,
-        y: event.y
-    };
-}
-
-function atualizarPosicaoNo(elemento, no, posicoes) {
-    no.x = posicoes.x;
-    no.y = posicoes.y;
-    grafo.vertices.set(no.id, { x: no.x, y: no.y });
-
-    const strokeWidth = calcularTamanhoStroke(tamanhoVertice);
-
-    d3.select(elemento)
-        .attr("cx", no.x)
-        .attr("cy", no.y)
-        .attr("stroke-width", strokeWidth);
-}
-
 function calcularTamanhoStroke(tamanhoVertice) {
     return tamanhoVertice * 0.2;
 }
@@ -416,7 +396,7 @@ function calcularPontoFinalY(aresta, useLogicalCoords = false) {
         : (len > 0 ? yTo - (dy / len) * distanciaSeta : yTo);
 }
 
-function calcularDiferencasEComprimento(aresta, useLogicalCoords = false) {
+function calcularDiferencasEComprimento(aresta) {
     const from = grafo.vertices.get(aresta.source);
     const to = grafo.vertices.get(aresta.target);
 
