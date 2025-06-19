@@ -21,6 +21,8 @@ let circulosSelecionados = [];
 const svg = d3.select("svg");
 /** @global {HTMLElement} tabela - A referência ao corpo da tabela HTML onde os detalhes do caminho são exibidos. */
 const tabela = document.querySelector("#tabela-caminho tbody");
+/** @global {HTMLElement} totalNodesSpan - A referência ao span HTML onde o total de nós é exibido. */
+const totalNodesSpan = document.querySelector("#total-nodes"); // <-- Adicione esta linha
 /** @global {Grafo} grafo - Uma instância da classe Grafo que representa a estrutura de dados do grafo. */
 let grafo = new Grafo();
 /** @global {Array<Object>} nodes - Um array de objetos representando os nós do grafo com suas coordenadas (id, x, y). */
@@ -85,7 +87,7 @@ document.getElementById("slider-arrow-gap").addEventListener("input", e => {
 svg.append("defs").append("marker")
     .attr("id", "arrowhead-green")
     .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 10)
+    .attr("refX", 0)
     .attr("refY", 0)
     .attr("markerWidth", 4)
     .attr("markerHeight", 4)
@@ -97,7 +99,7 @@ svg.append("defs").append("marker")
 svg.append("defs").append("marker")
     .attr("id", "arrowhead")
     .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 10)
+    .attr("refX", 0)
     .attr("refY", 0)
     .attr("markerWidth", 4)
     .attr("markerHeight", 4)
@@ -191,6 +193,14 @@ function configurarToolbar() {
 
 }
 
+// Adicione esta função em algum lugar do seu graphBuilder.js (por exemplo, abaixo de 'resetarSelecao')
+/**
+ * @brief Atualiza a exibição do total de nós na interface.
+ */
+function atualizarContagemNos() {
+    totalNodesSpan.textContent = `Total de Nós = ${nodes.length}`;
+}
+
 /**
  * @brief Configura os event listeners para os itens do menu principal.
  * Inclui funcionalidades como novo grafo, importação/exportação, copiar imagem e configurações de visualização.
@@ -281,6 +291,7 @@ function configurarMenuPrincipal() {
         desenharGrafoCompleto();
         centralizarGrafo();
         window.resetarSelecao();
+        atualizarContagemNos();
 
         if (nodes.length > 0) {
             // Atualiza o contador de ID para continuar a partir do maior ID existente
@@ -501,6 +512,7 @@ function configurarEventosNo(selection) {
                 nodes = nodes.filter(n => n.id !== d.id);
                 links = links.filter(l => l.source !== d.id && l.target !== d.id);
                 desenharGrafoCompleto(); // Redesenha o grafo após a remoção
+                atualizarContagemNos();
             }
         })
         .on("mouseover", function (event, d) {
@@ -630,6 +642,7 @@ function desenharNovoNo(id, x, y) {
 
     configurarEventosNo(newNode);
     atualizarEnumeracaoVertices(); // Atualiza os rótulos de nós, caso estejam habilitados
+    atualizarContagemNos();
 }
 
 /**
@@ -842,6 +855,7 @@ document.addEventListener("keydown", (e) => {
             grafo.removerVertice(id);
             nodes = nodes.filter(n => n.id !== id);
             links = links.filter(l => l.source !== id && l.target !== id);
+            atualizarContagemNos();
         } else if (itemSelecionado.source && itemSelecionado.target) { // Se for uma aresta
             grafo.removerAresta(itemSelecionado.source, itemSelecionado.target);
             links = links.filter(l =>
@@ -1022,6 +1036,7 @@ function desenharGrafoCompleto() {
     atualizarDistanciaSetas();
     atualizarEnumeracaoVertices();
     atualizarPesosArestas();
+    atualizarContagemNos();
 }
 
 /**
@@ -1057,16 +1072,27 @@ window.executarDijkstra = function () {
     zoomGroup.selectAll(".link")
         .classed("path", d => fazParteDoCaminho(d, resultado.caminho))
         .attr("marker-end", d => {
+            // Seta verde para arestas do caminho, mas mantém seta padrão para outras
             return d.bidirectional
                 ? null
                 : (fazParteDoCaminho(d, resultado.caminho)
-                    ? "url(#arrowhead-green)" // Seta verde para arestas do caminho
+                    ? "url(#arrowhead-green)"
                     : "url(#arrowhead)");
         });
 
     // Destaca os nós do caminho
     zoomGroup.selectAll(".node")
         .classed("path", d => resultado.caminho.includes(d.id));
+    circulosSelecionados.forEach(circulo => {
+        const nodeId = circulo.datum().id; // Pega o ID do dado associado ao círculo
+        if (nodeId === origemClicada) {
+            circulo.attr("fill", "orange");
+        } else if (nodeId === destinoClicada) {
+            circulo.attr("fill", "red");
+        }
+        circulo.classed("path", false); // Remove a classe .path se for origem/destino
+    });
+    // *************************************************
 
     tabela.innerHTML = ""; // Limpa a tabela
 
@@ -1143,6 +1169,7 @@ window.limparGrafo = function () {
     desenharGrafoCompleto();
     resetarSelecao();
     centralizarGrafo(); // Centraliza o SVG vazio
+    atualizarContagemNos();
 };
 
 /**
