@@ -471,12 +471,13 @@ svg.call(zoom); // Aplica o comportamento de zoom ao SVG
 svg.on("click", (event) => {
     if (modoAtual === "add-node") {
         const [mouseX, mouseY] = d3.pointer(event);
-        const [xLogico, yLogico] = currentTransform.invert([mouseX, mouseY]); // Converte coordenadas da tela para coordenadas lógicas do grafo
+        const [xLogico, yLogico] = currentTransform.invert([mouseX, mouseY]);
 
         const id = gerarIdSequencial();
         grafo.adicionarVertice(id, xLogico, yLogico);
         nodes.push({ id, x: xLogico, y: yLogico });
         desenharNovoNo(id, xLogico, yLogico);
+        atualizarContagemNos();
     }
 });
 
@@ -1295,3 +1296,4 @@ function centralizarGrafo() {
 // Inicializa a barra de ferramentas e o menu principal ao carregar o script
 configurarToolbar();
 configurarMenuPrincipal();
+atualizarContagemNos();
