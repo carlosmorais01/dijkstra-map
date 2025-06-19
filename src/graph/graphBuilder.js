@@ -1,7 +1,6 @@
 import {Grafo} from './grafo.js';
 import { parseOSM } from './mapConverter.js';
 
-// --- VARIÁVEIS GLOBAIS E INICIALIZAÇÃO DO D3.JS ---
 let origemClicada = null;
 let destinoClicada = null;
 let circulosSelecionados = [];
@@ -15,21 +14,18 @@ let contadorId = 1;
 const zoomGroup = svg.append("g");
 const nodeTooltip = d3.select("#node-tooltip");
 
-// --- VARIÁVEIS DE ESTADO PARA ADIÇÃO DE ARESTAS (PREPARAÇÃO PARA O PONTO 3) ---
 let isDrawingEdge = false;
 let startNode = null;
 let currentLine = null;
 let edgeType = 'undirected';
 
-// --- CONFIGURAÇÕES DE ESTILO (SLIDERS) ---
 let tamanhoVertice = 3;
 let larguraAresta = 1.5;
 let tamanhoSeta = 6;
 let distanciaSeta = 1;
 
-// --- VARIÁVEIS DE ESTADO DO MENU VISUALIZAR ---
-let enumerarVertices = false; // Estado para enumerar vértices
-let mostrarPesosArestas = false; // Estado para mostrar pesos
+let enumerarVertices = false;
+let mostrarPesosArestas = false;
 
 document.getElementById("slider-node-size").addEventListener("input", e => {
     tamanhoVertice = +e.target.value;
@@ -53,7 +49,6 @@ document.getElementById("slider-arrow-gap").addEventListener("input", e => {
     atualizarDistanciaSetas();
 });
 
-// --- DEFINIÇÕES DE MARCADORES (SETA) ---
 svg.append("defs").append("marker")
     .attr("id", "arrowhead-green")
     .attr("viewBox", "0 -5 10 10")
@@ -78,11 +73,8 @@ svg.append("defs").append("marker")
     .attr("d", "M0,-5L10,0L0,5")
     .attr("fill", "#868baf");
 
-// --- ESTADO DA APLICAÇÃO ---
 let modoAtual = "selecionar";
 let itemSelecionado = null;
-
-// --- FUNÇÕES DE INTERFACE DO USUÁRIO (UI) ---
 
 function configurarToolbar() {
     document.querySelectorAll(".tool-button:not(.edge-option):not(#tool-edge-main)").forEach(btn => {
@@ -135,7 +127,6 @@ function configurarToolbar() {
         });
     });
 
-    // Fecha os dropdowns se clicar fora deles
     document.addEventListener("click", (event) => {
         if (!edgeMainButton.contains(event.target) && !edgeDropdown.contains(event.target)) {
             edgeDropdown.classList.remove("show");
@@ -161,20 +152,18 @@ function configurarToolbar() {
 
 }
 
-// --- NOVO: Configurações do Menu Principal (Arquivo/Visualizar) ---
 function configurarMenuPrincipal() {
-    const mainMenuToggle = document.getElementById("menu-toggle-arrow"); // ID da seta para abrir o menu
+    const mainMenuToggle = document.getElementById("menu-toggle-arrow");
     const mainMenuContent = document.getElementById("app-main-menu");
     const fileInput = document.getElementById("file-input");
 
     if (mainMenuToggle) {
         mainMenuToggle.addEventListener("click", (event) => {
-            event.stopPropagation(); // Impede o fechamento imediato pelo document.click
+            event.stopPropagation();
             mainMenuContent.classList.toggle("show");
         });
     }
 
-    // Evento para abrir/fechar submenus ao passar o mouse
     document.querySelectorAll(".dropdown-item.has-submenu").forEach(item => {
         item.addEventListener("mouseenter", () => {
             item.querySelector(".submenu-content").style.display = "block";
@@ -185,15 +174,14 @@ function configurarMenuPrincipal() {
     });
 
 
-    // Opções do menu "Arquivo"
     document.getElementById("new-graph-btn").addEventListener("click", () => {
-        window.limparGrafo(); // Reutiliza a função existente
-        mainMenuContent.classList.remove("show"); // Fecha o menu
+        window.limparGrafo();
+        mainMenuContent.classList.remove("show");
     });
 
     document.getElementById("import-graph-btn").addEventListener("click", () => {
-        fileInput.click(); // Simula o clique no input de arquivo
-        mainMenuContent.classList.remove("show"); // Fecha o menu
+        fileInput.click();
+        mainMenuContent.classList.remove("show");
     });
 
     fileInput.addEventListener("change", (event) => {
@@ -201,15 +189,15 @@ function configurarMenuPrincipal() {
         if (file) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                const content = e.target.result;
+                const content = String(e.target.result);
 
                 try {
                     if (file.name.endsWith(".osm")) {
                         const parsed = parseOSM(content);
-                        importarGrafo(parsed); // função que trata o carregamento no sistema
+                        importarGrafo(parsed);
                     } else {
                         const data = JSON.parse(content);
-                        importarGrafo(data); // mesma função
+                        importarGrafo(data);
                     }
                 } catch (err) {
                     alert("Erro ao importar o arquivo. Verifique se é válido.");
@@ -252,16 +240,15 @@ function configurarMenuPrincipal() {
     }
 
     document.getElementById("copy-to-clipboard-btn").addEventListener("click", () => {
-        window.copiarImagemGrafo(); // Reutiliza a função existente
-        mainMenuContent.classList.remove("show"); // Fecha o menu
+        window.copiarImagemGrafo();
+        mainMenuContent.classList.remove("show");
     });
 
     document.getElementById("save-graph-btn").addEventListener("click", () => {
         salvarGrafoLocal();
-        mainMenuContent.classList.remove("show"); // Fecha o menu
+        mainMenuContent.classList.remove("show");
     });
 
-    // Opções do menu "Visualizar" (checkboxes)
     const enumerateNodesSwitch = document.getElementById("enumerate-nodes-switch");
     const showEdgeWeightsSwitch = document.getElementById("show-edge-weights-switch");
 
@@ -273,23 +260,23 @@ function configurarMenuPrincipal() {
 
     enumerateNodesSwitch.addEventListener("change", (event) => {
         enumerarVertices = event.target.checked;
-        localStorage.setItem("enumerarVertices", enumerarVertices); // ← ADICIONADO
+        localStorage.setItem("enumerarVertices", enumerarVertices);
         atualizarEnumeracaoVertices();
     });
 
     showEdgeWeightsSwitch.addEventListener("change", (event) => {
         mostrarPesosArestas = event.target.checked;
-        localStorage.setItem("mostrarPesosArestas", mostrarPesosArestas); // ← ADICIONADO
+        localStorage.setItem("mostrarPesosArestas", mostrarPesosArestas);
         atualizarPesosArestas();
     });
 }
 
 function salvarGrafoLocal() {
     const dataToSave = {
-        nodes: nodes.map(n => ({ id: n.id, x: n.x, y: n.y * -1 })), // Inverte Y de volta para o formato original para salvar
+        nodes: nodes.map(n => ({ id: n.id, x: n.x, y: n.y * -1 })),
         edges: links.map(l => ({ from: l.source, to: l.target, bidirectional: l.bidirectional }))
     };
-    const dataStr = JSON.stringify(dataToSave, null, 2); // Formata com indentação
+    const dataStr = JSON.stringify(dataToSave, null, 2);
 
     const blob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -335,7 +322,7 @@ function atualizarEnumeracaoVertices() {
 function atualizarPesosArestas() {
     if (mostrarPesosArestas) {
         const weightLabels = zoomGroup.selectAll(".link-weight-label")
-            .data(links, d => `${d.source}-${d.target}-${d.bidirectional}`); // Key-binding para arestas
+            .data(links, d => `${d.source}-${d.target}-${d.bidirectional}`);
 
         weightLabels.enter()
             .append("text")
@@ -346,12 +333,9 @@ function atualizarPesosArestas() {
             .attr("x", d => {
                 const from = grafo.vertices.get(d.source);
                 const to = grafo.vertices.get(d.target);
-                // Calcula o ponto médio da aresta
                 let midX = (from.x + to.x) / 2;
                 let midY = (from.y + to.y) / 2;
 
-                // Pequeno offset para o texto não ficar exatamente sobre a linha,
-                // pode precisar de ajuste fino.
                 const offset = 5;
                 const angle = Math.atan2(to.y - from.y, to.x - from.x);
                 midX += Math.sin(angle) * offset;
@@ -398,7 +382,6 @@ const zoom = d3.zoom()
     .on("zoom", (event) => {
         currentTransform = event.transform;
         zoomGroup.attr("transform", currentTransform);
-        // Chamar atualização de labels/pesos aqui para que se movam com o zoom
         atualizarEnumeracaoVertices();
         atualizarPesosArestas();
     });
@@ -415,12 +398,9 @@ svg.on("click", (event) => {
         nodes.push({ id, x: xLogico, y: yLogico });
 
         desenharNovoNo(id, xLogico, yLogico);
-        return;
     }
 });
 
-
-// --- FUNÇÃO CENTRALIZADA PARA CONFIGURAR EVENTOS DE NÓS ---
 function configurarEventosNo(selection) {
     selection
         .on("click", function (event, d) {
@@ -527,7 +507,6 @@ function configurarEventosNo(selection) {
                     if (modoAtual === "selecionar") {
                         d3.select(this).attr("stroke", null);
                     } else if (modoAtual.startsWith("add-edge-")) {
-                        // O arrasto de aresta sempre tem a lógica aqui
                         if (currentLine) {
                             currentLine.remove();
                             currentLine = null;
@@ -558,7 +537,6 @@ function configurarEventosNo(selection) {
         );
 }
 
-// --- FUNÇÃO PARA DESENHAR UM NOVO NÓ (Usa a função de configuração de eventos) ---
 function desenharNovoNo(id, x, y) {
     const strokeWidth = calcularTamanhoStroke(tamanhoVertice);
 
@@ -576,7 +554,6 @@ function desenharNovoNo(id, x, y) {
     atualizarEnumeracaoVertices();
 }
 
-// --- FUNÇÃO PARA DESENHAR UMA NOVA ARESTA (Usa a função de configuração de eventos) ---
 function desenharNovaAresta(sourceId, targetId, bidirectional) {
     const newLink = { source: sourceId, target: targetId, bidirectional: bidirectional };
     const from = grafo.vertices.get(newLink.source);
@@ -606,7 +583,6 @@ function desenharNovaAresta(sourceId, targetId, bidirectional) {
     atualizarPesosArestas();
 }
 
-// --- FUNÇÃO CENTRALIZADA PARA CONFIGURAR EVENTOS DE ARESTAS ---
 function
 configurarEventosAresta(selection) {
     selection
@@ -763,7 +739,6 @@ function encontrarVerticeMaisProximo(xCoordInZoomGroup, yCoordInZoomGroup) {
     }) || null;
 }
 
-// --- CARREGAMENTO INICIAL DO GRAFO ---
 const grafoSalvo = localStorage.getItem("grafo-importado");
 
 if (grafoSalvo) {
@@ -809,8 +784,6 @@ if (nodes.length > 0) {
     contadorId = max + 1;
 }
 
-// --- FUNÇÕES DE UTILIDADE E ATUALIZAÇÃO VISUAL ---
-
 function fazParteDoCaminho(d, caminho) {
     for (let i = 0; i < caminho.length - 1; i++) {
         const a = caminho[i];
@@ -834,7 +807,7 @@ function atualizarVertices() {
         zoomGroup.selectAll(".node-label")
             .attr("x", d => d.x)
             .attr("y", d => d.y)
-            .raise(); // traz os rótulos para frente
+            .raise();
     }
 }
 
@@ -892,12 +865,9 @@ function desenharGrafoCompleto() {
     atualizarVertices();
     atualizarArestas();
     atualizarDistanciaSetas();
-    // Chamar atualização de visibilidade de labels e pesos ao redesenhar
     atualizarEnumeracaoVertices();
     atualizarPesosArestas();
 }
-
-// --- FUNÇÕES DE LÓGICA DO GRAFO (DIJKSTRA) ---
 
 window.executarDijkstra = function () {
     if (origemClicada === null || destinoClicada === null) {
@@ -986,7 +956,6 @@ window.resetarSelecao = function () {
     document.getElementById("custo").textContent = "Custo = 0";
 };
 
-// Limpa todos os nós, arestas e reinicia o estado do grafo
 window.limparGrafo = function () {
     grafo = new Grafo();
     nodes = [];
@@ -997,12 +966,11 @@ window.limparGrafo = function () {
     zoomGroup.selectAll(".selected-node.temp-selection").remove();
     circulosSelecionados = [];
     contadorId = 1;
-    desenharGrafoCompleto(); // Redesenha o grafo vazio e reaplica configurações visuais
-    resetarSelecao(); // Limpa a tabela e stats
-    centralizarGrafo(); // Centraliza a view para o grafo vazio
+    desenharGrafoCompleto();
+    resetarSelecao();
+    centralizarGrafo();
 };
 
-// Copia a imagem atual do SVG do grafo para a área de transferência
 window.copiarImagemGrafo = async function () {
     try {
         const svgElement = document.querySelector("svg");
@@ -1080,6 +1048,5 @@ function centralizarGrafo() {
     currentTransform = newTransform;
 }
 
-// --- INICIALIZAÇÃO DA APLICAÇÃO ---
 configurarToolbar();
-configurarMenuPrincipal(); // NOVO: Chama a função para configurar o menu principal
+configurarMenuPrincipal();
