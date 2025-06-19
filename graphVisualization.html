@@ -13,33 +13,32 @@
     <div class="main-dropdown-menu">
       <a href="index.html"><img class="principal-icon" src="public/icon/logo.svg" alt="Icon"></a>
       <img id="menu-toggle-arrow" src="public/icon/dropdown_menu_icon.svg" alt="Abrir menu" class="menu-toggle-arrow">
-    </div>
-  </div>
-
-  <div class="dropdown-content main-menu-content" id="app-main-menu">
-    <div class="dropdown-item has-submenu" id="menu-arquivo">
-      Arquivo <span class="submenu-arrow">▶</span>
-      <div class="submenu-content right-aligned">
-        <button class="menu-option" id="new-graph-btn">Criar novo grafo em branco</button>
-        <input type="file" id="file-input" accept=".json, .osm" style="display: none;">
-        <button class="menu-option" id="import-graph-btn">Importar novo grafo</button>
-        <button class="menu-option" id="copy-to-clipboard-btn">Copiar para a área de transferência</button>
-        <button class="menu-option" id="save-graph-btn">Salvar Grafo</button>
-      </div>
-    </div>
-    <div class="dropdown-item has-submenu" id="menu-visualizar">
-      Visualizar <span class="submenu-arrow">▶</span>
-      <div class="submenu-content right-aligned">
-        <label class="menu-option checkbox-option">
-          Enumerar Vértices
-          <input type="checkbox" id="enumerate-nodes-switch">
-          <span class="checkmark"></span>
-        </label>
-        <label class="menu-option checkbox-option">
-          Mostrar Pesos nas Arestas
-          <input type="checkbox" id="show-edge-weights-switch">
-          <span class="checkmark"></span>
-        </label>
+      <div class="dropdown-content main-menu-content" id="app-main-menu">
+        <div class="dropdown-item has-submenu" id="menu-arquivo">
+          Arquivo <span class="submenu-arrow">▶</span>
+          <div class="submenu-content right-aligned">
+            <button class="menu-option" id="new-graph-btn">Criar novo grafo em branco</button>
+            <input type="file" id="file-input" accept=".json, .osm" style="display: none;">
+            <button class="menu-option" id="import-graph-btn">Importar novo grafo</button>
+            <button class="menu-option" id="copy-to-clipboard-btn">Copiar para a área de transferência</button>
+            <button class="menu-option" id="save-graph-btn">Salvar Grafo</button>
+          </div>
+        </div>
+        <div class="dropdown-item has-submenu" id="menu-visualizar">
+          Visualizar <span class="submenu-arrow">▶</span>
+          <div class="submenu-content right-aligned">
+            <label class="menu-option checkbox-option">
+              Enumerar Vértices
+              <input type="checkbox" id="enumerate-nodes-switch">
+              <span class="checkmark"></span>
+            </label>
+            <label class="menu-option checkbox-option">
+              Mostrar Pesos nas Arestas
+              <input type="checkbox" id="show-edge-weights-switch">
+              <span class="checkmark"></span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
   </div>
