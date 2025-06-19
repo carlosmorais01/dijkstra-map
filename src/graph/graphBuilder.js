@@ -85,7 +85,7 @@ document.getElementById("slider-arrow-gap").addEventListener("input", e => {
 svg.append("defs").append("marker")
     .attr("id", "arrowhead-green")
     .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 0)
+    .attr("refX", 10)
     .attr("refY", 0)
     .attr("markerWidth", 4)
     .attr("markerHeight", 4)
@@ -97,7 +97,7 @@ svg.append("defs").append("marker")
 svg.append("defs").append("marker")
     .attr("id", "arrowhead")
     .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 0)
+    .attr("refX", 10)
     .attr("refY", 0)
     .attr("markerWidth", 4)
     .attr("markerHeight", 4)
@@ -465,7 +465,6 @@ svg.on("click", (event) => {
         const id = gerarIdSequencial();
         grafo.adicionarVertice(id, xLogico, yLogico);
         nodes.push({ id, x: xLogico, y: yLogico });
-
         desenharNovoNo(id, xLogico, yLogico);
     }
 });
@@ -546,7 +545,6 @@ function configurarEventosNo(selection) {
                     }
                 })
                 .on("drag", function (event, d) {
-                    nodeTooltip.style("display", "none");
                     if (modoAtual === "selecionar") {
                         d.x = event.x;
                         d.y = event.y;
@@ -601,14 +599,14 @@ function configurarEventosNo(selection) {
 
                             if (!existingLink) {
                                 grafo.adicionarAresta(startNode, endNode.id, bidirectional);
-                                links.push({ source: startNode, target: endNode.id, bidirectional: bidirectional });
+                                links.push({source: startNode, target: endNode.id, bidirectional: bidirectional});
                                 desenharNovaAresta(startNode, endNode.id, bidirectional);
                             }
                         }
                         startNode = null;
                     }
                 })
-        );
+        )
 }
 
 /**
@@ -661,7 +659,7 @@ function desenharNovaAresta(sourceId, targetId, bidirectional) {
         .attr("y1", y1)
         .attr("x2", x2)
         .attr("y2", y2);
-
+  
     configurarEventosAresta(novaLinha);
 
     // Garante que nós e rótulos estejam acima das arestas
@@ -688,7 +686,6 @@ function configurarEventosAresta(selection) {
                 desenharGrafoCompleto();
                 return;
             }
-
             if (modoAtual !== "selecionar") return;
             event.stopPropagation();
             resetarSelecaoVisual();
@@ -885,7 +882,7 @@ if (grafoSalvo) {
         x: n.x - minX,
         y: (n.y - minY) * -1
     }));
-
+  
     grafo.carregarDoJSON({ nodes: nodes, edges: data.edges });
 
     links = data.edges.map(e => ({
