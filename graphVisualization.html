@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>DijkstraMap</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script type="module" src="src/graph/graphBuilder.js"></script>
+  <link rel="stylesheet" href="styles/styles.css">
+</head>
+<body>
+<div class="menu">
+  <div class="app-header">
+    <div class="main-dropdown-menu">
+      <a href="index.html"><img class="principal-icon" src="public/icon/logo.svg" alt="Icon"></a>
+      <img id="menu-toggle-arrow" src="public/icon/dropdown_menu_icon.svg" alt="Abrir menu" class="menu-toggle-arrow">
+      <div class="dropdown-content main-menu-content" id="app-main-menu">
+        <div class="dropdown-item has-submenu" id="menu-arquivo">
+          Arquivo <span class="submenu-arrow">▶</span>
+          <div class="submenu-content right-aligned">
+            <button class="menu-option" id="new-graph-btn">Criar novo grafo em branco</button>
+            <input type="file" id="file-input" accept=".json, .osm" style="display: none;">
+            <button class="menu-option" id="import-graph-btn">Importar novo grafo</button>
+            <button class="menu-option" id="copy-to-clipboard-btn">Copiar para a área de transferência</button>
+            <button class="menu-option" id="save-graph-btn">Salvar Grafo</button>
+          </div>
+        </div>
+        <div class="dropdown-item has-submenu" id="menu-visualizar">
+          Visualizar <span class="submenu-arrow">▶</span>
+          <div class="submenu-content right-aligned">
+            <label class="menu-option checkbox-option">
+              Enumerar Vértices
+              <input type="checkbox" id="enumerate-nodes-switch">
+              <span class="checkmark"></span>
+            </label>
+            <label class="menu-option checkbox-option">
+              Mostrar Pesos nas Arestas
+              <input type="checkbox" id="show-edge-weights-switch">
+              <span class="checkmark"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="conteudo-menu">
+    <p class="info-menu">Estatísticas do Algoritmo:</p>
+    <div class="stats">
+      <span id="velocidade">Velocidade = 0s</span><br>
+      <span id="status">Status = Aguardando</span><br>
+      <span id="explorados">Nós explorados = 0</span><br>
+      <span id="custo">Custo = 0</span><br>
+      <span id="total-nodes">Total de Nós = 0</span><br>
+    </div>
+    <div class="ajustes">
+      <p class="info-menu">Ajustes de Visualização:</p>
+      <label for="slider-node-size">Tamanho dos Vértices</label>
+      <input type="range" id="slider-node-size" min="0.001" max="10" step="0.000000001" value="3">
+
+      <label for="slider-link-width">Espessura das Arestas</label>
+      <input type="range" id="slider-link-width" min="0.001" max="5" step="0.0001" value="1.5">
+
+      <label for="slider-arrow-size">Tamanho das Pontas</label>
+      <input type="range" id="slider-arrow-size" min="2" max="15" value="6" step="0.001">
+
+      <label for="slider-arrow-gap">Distanciamento da Ponta</label>
+      <input type="range" id="slider-arrow-gap" min="0" max="8" value="0" step="0.001">
+    </div>
+    <p class="info-menu">Caminho:</p>
+    <table id="tabela-caminho">
+      <thead>
+      <tr>
+        <th>Vértice</th>
+        <th>Distância</th>
+        <th>Próximo</th>
+      </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="botoes-opcoes">
+    <button class="botao" onclick="executarDijkstra()">Calcular Caminho</button>
+    <button class="botao" onclick="resetarSelecao()">Limpar Seleção</button>
+  </div>
+</div>
+<svg class="grafo"></svg>
+
+<div id="node-tooltip" class="tooltip"></div>
+
+<div class="toolbar">
+  <button id="tool-select" class="tool-button active" data-mode="selecionar" title="Selecionar">
+    <img src="public/icon/Icon_Select.svg" alt="Selecionar" class="icon-tool">
+  </button>
+  <button id="tool-node" class="tool-button" data-mode="add-node" title="Adicionar vértice">
+    <img src="public/icon/Node_icon.svg" alt="Vértice">
+  </button>
+  <div class="tool-button-group">
+    <button id="tool-edge-main" class="tool-button" data-mode="add-edge-undirected" title="Adicionar aresta">
+      <img id="edge-main-icon" src="public/icon/aresta.svg" alt="Aresta Não Direcionada">
+      <span class="dropdown-arrow">▼</span> </button>
+    <div class="edge-dropdown-content">
+      <button class="tool-button edge-option" data-edge-type="undirected" title="Aresta Não Direcionada">
+        <img src="public/icon/aresta.svg" alt="Não Direcionada">
+      </button>
+      <button class="tool-button edge-option" data-edge-type="directed" title="Aresta Direcionada">
+        <img src="public/icon/aresta-direcionada.svg" alt="Direcionada">
+      </button>
+    </div>
+  </div>
+  <button id="tool-flag" class="tool-button" data-mode="origem-destino" title="Selecionar origem/destino">
+    <img src="public/icon/flag_icon.svg" alt="Origem/Destino">
+  </button>
+  <button id="tool-delete" class="tool-button" title="Apagar item selecionado">
+    <img src="public/icon/eraser_icon.svg" alt="Apagar" class="icon-tool">
+  </button>
+</div>
+
+</body>
+</html>
